@@ -1,0 +1,17 @@
+{
+  "name": "dominions_discord_bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lexxicon",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.1.1",
+    "dotenv": "^8.2.0",
+    "lodash": "^4.17.15"
+  },
+  "devDependencies": {},
+  "description": ""
+}

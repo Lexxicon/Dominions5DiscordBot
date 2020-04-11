@@ -1,0 +1,9 @@
+{
+    "GAMES_CATEGORY_NAME":"Dominions 5",
+    "LOBBY_NAME":"lobby",
+    "DOMINION_MAPS_PATH":"/home/steam/.dominions5/maps/",
+    "DOMINION_MODS_PATH":"/home/steam/.dominions5/mods/",
+    "DOMINION_SAVE_PATH":"/home/steam/.dominions5/savedgames/",
+    "DOMINION_EXEC_PATH":"/home/steam/Steam/steamapps/common/Dominions5/dom5.sh",
+    "DEFAULT_PORT": 1024
+}

@@ -1,0 +1,104 @@
+
+module.exports = {
+    EMOJI: {
+        ":thumbsup:":   "👍",
+        ":thumbsdown:":  "👎",
+        ":robot:":      "🤖",
+        ":zero:":       "0️⃣",
+        ":one:":        "1️⃣",
+        ":two:":        "2️⃣",
+        ":three:":      "3️⃣",
+        ":four:":       "4️⃣",
+        ":five:":       "5️⃣",
+        ":six:":        "6️⃣",
+        ":seven:":      "7️⃣",
+        ":eight:":      "8️⃣",
+        ":nine:":       "9️⃣",
+        ":ten:":        "🔟",
+        ":x:":          "❌",
+        ":no_entry_sign:": "🚫",
+    },
+    ERA: {
+        "EARLY": "--era 1",
+        "MIDDLE": "--era 2",
+        "LATE": "--era 3"
+    },
+    STORY_EVENTS: {
+        "NONE": "--nostoryevents",
+        "SOME": "--storyevents",
+        "ALL": "--allstoryevents"
+    },
+    EVENTS: {
+        "COMMON": "--eventrarity 1",
+        "RARE": "--eventrarity 2"
+    },
+    SLOTS: {
+        "BANNED": "--closed __NATION_ID__",
+        "EASY": "--easyai __NATION_ID__",
+        "NORMAL": "--normai __NATION_ID__",
+        "DIFFICULT": "--diffai __NATION_ID__",
+        "MIGHTY": "--mightyai __NATION_ID__",
+        "MASTER": "--masterai __NATION_ID__",
+        "IMPOSSIBLE": "--impai __NATION_ID__"
+    },
+    SIMPLE_RAND_MAP: {
+        "SMALL": "--randmap 10",
+        "MEDIUM": "--randmap 15",
+        "LARGE": "--randmap 20"
+    },
+    PLAYER_STATUS: {
+        "-2": {
+            id: -2,
+            canBlock: false,
+            display: "Defeated this turn"
+        },
+        "-1": {
+            id: -1,
+            canBlock: false,
+            display: "Defeated"
+        },
+        "0": {
+            id: 0,
+            canBlock: false,
+            display: "-"
+        },
+        "1": {
+            id: 1,
+            canBlock: true,
+            display: "Player"
+        },
+        "2": {
+            id: 2,
+            canBlock: false,
+            display: "AI"
+        }
+    },
+    AI_DIFFICULTY: {
+        "0" : "Human",
+        "1" : "[bot] Easy",
+        "2" : "[bot] Normal",
+        "3" : "[bot] Difficult",
+        "4" : "[bot] Mighty",
+        "5" : "[bot] Master",
+        "6" : "[bot] Impossible"
+    },
+    TURN_STATE: {
+        "0": {
+            ready: false,
+            display: "Waiting"
+        },
+        "1": {
+            ready: false,
+            display: "Waiting (Partial)"
+        },
+        "2": {
+            ready: true,
+            display: "Done"
+        },
+        "9": { //lobby?
+            ready: false,
+            display: "-"
+        }
+    }
+
+}
