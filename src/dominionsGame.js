@@ -4,7 +4,7 @@ const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
 
-function create(name){
+function create(name, channel){
     const game = {
         name: name,
         settings: {
@@ -37,8 +37,11 @@ function create(name){
             }
         },
         discord: {
-            channel: null,
-            guild: null
+            channel: channel,
+            guild: channel.guild,
+            players:{
+                //playerID : nationID
+            }
         }
     };
 

@@ -124,7 +124,7 @@ function startWatches(game) {
 
         game.discord.channel.send(embed).then(msg => {
             fs.watch(filePath, 'utf8', (event, file) => {
-                console.info('updating');
+                console.info(`updating ${game.name}`);
                 read(filePath, (lines) => {
                     msg.edit(createEmbeddedGameState(parseLines(lines)));
                 });

@@ -30,6 +30,20 @@ function emoji(input){
     return input;
 }
 
+function saveJSON(name, data){
+    fs.writeFile(`${config.BOT_SAVE_PATH}${name}`, JSON.stringify(data), err => {
+        if(err) throw err;
+        console.log(`Saved ${name}`);
+    });
+}
+
+function loadJSON(name, cb){
+    fs.readFile(`${config.BOT_SAVE_PATH}${name}`, (err, data) => {
+        if(err) cb(data, err);
+        else cb(JSON.parse(data));
+    });
+}
+
 module.exports = {
     findChannel: function (guild, name) {
         return guild.channels.cache.find(c => c.name === name);
@@ -39,5 +53,7 @@ module.exports = {
             domcmd('settimeleft 15', game, cb);
         }
     },
-    emoji: emoji
+    emoji,
+    saveJSON,
+    loadJSON
 };
