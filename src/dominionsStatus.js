@@ -1,22 +1,10 @@
-// Status for '<game_name>'
-// turn 38, era 1, mods 0, turnlimit 0
-// Nation  6       6       2       3       0       early_ermor     Ermor   New Faith
-// Nation  13      13      1       0       0       early_abysia    Abysia  Children of Flame
-// Nation  25      25      2       2       0       early_kailasa   Kailasa Rise of the Ape Kings
-// Nation  27      27      1       0       2       early_yomi      Yomi    Oni Kings
-// Nation  37      37      2       2       0       early_rlyeh     R'lyeh  Time of Aboleths
-// Nation  5       5       0       0       9       early_arcoscephale      Arcoscephale    Golden Era
-
-
-
-// ['Nation', nation_ID, pretender_ID, player_status, AI_difficulty, turn_state, string_id, nation_name, nation_title]
-
 const Discord = require('discord.js');
 const fs = require('fs');
 const _ = require('lodash');
 
 const config = require('../res/config.json');
 const CONSTANTS = require('./constants.js');
+const domGame = require('./dominionsGame.js');
 
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
@@ -77,9 +65,13 @@ function createEmbeddedGameState(gameState){
             activeState.push('-');
         }
     }
-    _.filter(gameState.playerStatus, s => s.playerStatus.canBlock).forEach(addRecord);
-    _.filter(gameState.playerStatus, s => !s.playerStatus.canBlock).forEach(addRecord);
 
+    if(gameState.turnState.turn >= 0){
+        _.filter(gameState.playerStatus, s => s.playerStatus.canBlock).forEach(addRecord);
+        _.filter(gameState.playerStatus, s => !s.playerStatus.canBlock).forEach(addRecord);
+    }else{
+        _.forEach(gameState.playerStatus, addRecord);
+    }
     fields.push({
         name: 'Empire',
         value: _.join(activeNames, "\n"),
@@ -94,17 +86,25 @@ function createEmbeddedGameState(gameState){
         name: 'Turn State',
         value: _.join(activeState, '\n'),
         inline: true
-    })
+    });
 
-    const exampleEmbed = new Discord.MessageEmbed()
+    let desc;
+
+    if(gameState.turnState.turn < 0){
+        desc = "Lobby"
+    } else{
+        desc = `Turn: ${gameState.turnState.turn}`;
+    }
+
+    const embeddedMessage = new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setTitle(`Game State for: ${gameState.name}`)
-        .setDescription(`Turn: ${gameState.turnState.turn}`)
+        .setDescription(desc)
         .addFields(
             fields
         );
 
-    return exampleEmbed;
+    return embeddedMessage;
 }
 
 function read(path, cb){
@@ -117,20 +117,40 @@ function read(path, cb){
     });
 }
 
+function watchStatusFile(filePath, game){
+    game.getChannel(c => {
+        c.messages.fetch(game.discord.turnStateMessageId).then(
+            msg =>{
+                fs.watch(filePath, 'utf8', (event, file) => {
+                    console.info(`updating ${game.name}`);
+                    read(filePath, (lines) => {
+                        currentTurnState = parseLines(lines);
+                        msg.edit(createEmbeddedGameState(currentTurnState));
+                    });
+                });
+
+            }
+        );
+    });
+}
+
 function startWatches(game) {
     const filePath = `${config.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
-    read(filePath, (lines) => {
-        const embed = createEmbeddedGameState(parseLines(lines));
-
-        game.discord.channel.send(embed).then(msg => {
-            fs.watch(filePath, 'utf8', (event, file) => {
-                console.info(`updating ${game.name}`);
-                read(filePath, (lines) => {
-                    msg.edit(createEmbeddedGameState(parseLines(lines)));
+    
+    if(!game.discord.turnStateMessageId){
+        read(filePath, (lines) => {
+            const embeddedMessage = createEmbeddedGameState(parseLines(lines));
+            game.getChannel(c => {
+                c.send(embeddedMessage).then(msg => {
+                    game.discord.turnStateMessageId = msg.id;
+                    domGame.saveGame(game);
+                    watchStatusFile(filePath, game);
                 });
             });
         });
-    });
+    }else{
+        watchStatusFile(filePath, game);
+    }
 }
 
 module.exports = {

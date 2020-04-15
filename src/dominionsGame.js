@@ -4,57 +4,126 @@ const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
 
-function create(name, channel){
+const games = {};
+
+function killGames(){
+    _.keys(games, (key) => {
+        if(games[key].getProcess){
+            games[key].getProcess().kill();
+            delete games[key].getProcess;
+        }
+    });
+}
+process.on('cleanup',killGames);
+
+function create(channel, name, bot){
     const game = {
         name: name,
+        state: {
+            turn: -1,
+            nextTurnStartTime: 0,
+        },
         settings: {
             server: {
                 port: config.DEFAULT_PORT
             },
             turns:{
                 quickHost: true,
-                maxTurnTime: 36,
-                maxHoldups: 0,
+                maxTurnTime: 48,
+                maxHoldups: 2,
             },
             setup: {
-                masterPass: 'RXAYQ',
-                era: 'EARLY', //[EARLY=1, MIDDLE=2, LATE=3]
-                storyEvents: 'SOME', //[NONE, SOME, ALL]
+                masterPass: Math.random().toString(36).substring(2, 15),
+                era: 'MIDDLE', //[EARLY=1, MIDDLE=2, LATE=3]
+                storyEvents: 'ALL', //[NONE, SOME, ALL]
                 eventRarity: 'COMMON', // [common=1, rare=2]
                 map: 'MEDIUM', // [SMALL, MEDIUM, LARGE] or name of actual map
                 slots: { //nationID: difficulty
-                    6: 'EASY', //--easyai 6
-                    7: 'NORMAL', //--normai 7
-                    8: 'DIFFICULT', //--diffai
-                    9: 'MIGHTY', //--mightyai
-                    10: 'MASTER', //--masterai
-                    11: 'IMPOSSIBLE', //--impai
-                    12: 'BANNED' //--closed
+                    // 8: 'DIFFICULT', //--diffai
+                    // 9: 'MIGHTY', //--mightyai
+                    // 10: 'MASTER', //--masterai
+                    // 11: 'IMPOSSIBLE', //--impai
+                    // 12: 'BANNED' //--closed
                 },
-                thrones: [3, 2, 0],
-                victoryPoints: 0,
-                cataclysm: 0
+                thrones: [5, 3, 2],
+                victoryPoints: 8,
+                cataclysm: 72
             }
         },
         discord: {
-            channel: channel,
-            guild: channel.guild,
+            channelId: channel.id,
+            turnStateMessageId: null,
+            pingMessageId: null,
             players:{
-                //playerID : nationID
+                //playerId : nationId
             }
         }
     };
+    console.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
+    return wrapGame(game, bot);
+}
+
+function hostGame(game){
+    const spawn = require('child_process').spawn;
+    const args = getLaunchArgs(game);
+    console.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
+    const process = spawn(config.DOMINION_EXEC_PATH, args, {stdio: 'inherit'});
+
+    process.on('close', (code, sig) => {
+        delete game.getProcess;
+    });
+
+    game.getProcess = () => process;
+}
+
+function loadGame(name, bot, cb){
+    util.loadJSON(name, (data, err) => {
+        console.info('Wrapping game');
+        if(err) throw `Error ${err}`;
+        cb(wrapGame(data, bot));
+    });
+}
+
+function saveGame(game){
+    util.saveJSON(game.name, game);
+}
+
+function wrapGame(game, bot){
+    let channel = null;
+    game.getChannel = (cb) => {
+        if(channel === null){
+            channel = bot.channels.fetch(game.discord.channelId, true).then(c => {
+                channel = c;
+                cb(c);
+            });
+        }else{
+            cb(channel);
+        }
+    }
+
+    let guild = null;
+    game.getGuild = (cb) => {
+        if(guild === null){
+            guild = bot.guilds.resolve(game.getChannel).then(c => {
+                guild = c;
+                cb(guild);
+            });
+        }else{
+            cb(guild);
+        }
+    }
+
+    games[game.name] = game;
 
     return game;
 }
-
 
 function getLaunchArgs(config){
     const server = config.settings.server;
     const turns = config.settings.turns;
     const setup = config.settings.setup;
 
-    const args = [];
+    let args = [];
     // --- standard launch args ---
     args.push("--nosound");
     args.push("--nosteam");
@@ -62,37 +131,58 @@ function getLaunchArgs(config){
 
     // --- server settings ---
     args.push("--tcpserver");
-    args.push("--port " + server.port);
+    args.push("--port");
+    args.push(server.port);
     args.push("--statusdump");
 
     // --- turn settings ---
     if(!turns.quickHost) args.push("--noquickhost");
-    if(turns.maxTurnTime) args.push("--hours " + turns.maxTurnTime);
-    if(turns.maxHoldups) args.push("--maxholdups " + turns.maxHoldups)
+    if(turns.maxTurnTime) {
+        args.push("--hours");
+        args.push(turns.maxTurnTime);
+    }
+    if(turns.maxHoldups) {
+        args.push("--maxholdups")
+        args.push(turns.maxHoldups);
+    }
 
     //new game settings
     args.push("--noclientstart");
-    args.push("--masterpass " + setup.masterPass);
-    args.push("--thrones " + _.join(setup.thrones," " ));
-    if(setup.victoryPoints) args.push("--requiredap " + setup.victoryPoints);
-    if(setup.cataclysm) args.push("--cataclysm " + setup.cataclysm);
-    if(CONSTANTS.SIMPLE_RAND_MAP[setup.map]){
-        args.push(CONSTANTS.SIMPLE_RAND_MAP[setup.map]);
-    }else{
-        args.push("--mapfile " + setup.map);
+    args.push("--masterpass");
+    args.push(setup.masterPass);
+    args.push("--thrones");
+    args.push(_.join(setup.thrones, " "));
+    if(setup.victoryPoints){
+        args.push("--requiredap");
+        args.push(setup.victoryPoints);
     }
-    args.push(CONSTANTS.ERA[setup.era]);
+    if(setup.cataclysm) {
+        args.push("--cataclysm");
+        args.push(setup.cataclysm);
+    }
+    if(CONSTANTS.SIMPLE_RAND_MAP[setup.map]){
+        args = args.concat(CONSTANTS.SIMPLE_RAND_MAP[setup.map]);
+    }else{
+        args.push("--mapfile");
+        args.push(setup.map);
+    }
+    args = args.concat(CONSTANTS.ERA[setup.era]);
+    args = args.concat(CONSTANTS.EVENTS[setup.eventRarity]);
+
     args.push(CONSTANTS.STORY_EVENTS[setup.storyEvents]);
-    args.push(CONSTANTS.EVENTS[setup.eventRarity]);
     for(k in setup.slots){
-        args.push(CONSTANTS.SLOTS[setup.slots[k]].replace('__NATION_ID__', k));
+        args.push(CONSTANTS.SLOTS[setup.slots[k]])
+        args.push(k);
     }
     args.push(config.name);
 
-    return _.join(args, " ");
+    return args;
 }
 
 module.exports = {
     create,
-    getLaunchArgs
+    getLaunchArgs,
+    loadGame,
+    saveGame,
+    hostGame
 };

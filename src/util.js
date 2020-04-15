@@ -9,6 +9,11 @@ for(k in EMOJI){
     EMOJI_REGEX[k] = new RegExp(_.escapeRegExp(k), 'gi')
 }
 
+fs.mkdirSync(config.BOT_SAVE_PATH, {recursive: true}, (err) => {
+    if (err) throw err;
+});
+
+
 function domcmd (commands, game, cb = null) {
     const path = config.DOMINION_SAVE_PATH + game.name + '/domcmd';
     fs.writeFile(path, commands, (err) => {
@@ -31,17 +36,46 @@ function emoji(input){
 }
 
 function saveJSON(name, data){
-    fs.writeFile(`${config.BOT_SAVE_PATH}${name}`, JSON.stringify(data), err => {
+    fs.writeFile(`${config.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data), err => {
         if(err) throw err;
         console.log(`Saved ${name}`);
     });
 }
 
 function loadJSON(name, cb){
+    name = name.endsWith('.json') ? name : `${name}.json`;
+    console.info(`loading ${name}`);
     fs.readFile(`${config.BOT_SAVE_PATH}${name}`, (err, data) => {
         if(err) cb(data, err);
-        else cb(JSON.parse(data));
+        else {
+            let json = JSON.parse(data);
+            console.info(`loaded ${json} from ${data}`);
+            cb(json);
+        }
     });
+}
+
+function loadAllGames(cb){
+    fs.readdir(config.BOT_SAVE_PATH, (e, items)=>{
+        if(e) {
+            throw e;
+        }
+        items.forEach(cb);
+    });
+}
+
+function randomValue(array){
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+function generateName(){
+    for(let i = 0; i < 30; i++){
+        let name = randomValue(config.GAME_NAME_PREFIX)+'-'+randomValue(config.GAME_NAME_SUFFIX);
+        if(!fs.existsSync(`${config.DOMINION_MODS_PATH}${name}`)){
+            return name;
+        }
+    }
+    throw new 'Failed to create valid name after 30 tries';
 }
 
 module.exports = {
@@ -55,5 +89,7 @@ module.exports = {
     },
     emoji,
     saveJSON,
-    loadJSON
+    loadJSON,
+    generateName,
+    loadAllGames
 };

@@ -1,11 +1,12 @@
 const config = require("../res/config.json");
 const util = require('./util.js');
 const status = require('./dominionsStatus.js');
+const domGame = require('./dominionsGame.js');
 
 const GAMES_CATEGORY_NAME = config.GAMES_CATEGORY_NAME;
 const LOBBY_NAME = config.LOBBY_NAME.toLowerCase();
 
-function createChannel(guild, name, reason){
+function createChannel(guild, name, reason, cb){
     name = name.toLowerCase();
     console.info('create ' + name);
     if (name === LOBBY_NAME) {
@@ -23,7 +24,7 @@ function createChannel(guild, name, reason){
         type: 'text',
         parent: category.id,
         reason: reason
-    });
+    }).then(cb);
 }
 
 function deleteChannel(guild, name, reason){
@@ -51,7 +52,12 @@ function deleteChannel(guild, name, reason){
     channel.delete(reason);
 }
 
+let pingMsgs = {};
+
 function handleCommand(msg){
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return
+    }
     const input = msg.content.substring(1);
 
     let split = input.indexOf(' ');
@@ -60,8 +66,24 @@ function handleCommand(msg){
     const command = input.substring(0, split);
     const arg = split >= input.length ? '' : input.substring(split + 1);
     switch (command) {
-        case 'create':
-            createChannel(msg.guild, arg, `Created by request of ${msg.author.username}`);
+        case 'host':
+            let gameName = util.generateName();
+            console.info(`Creating ${gameName}`);
+
+            console.info(`Creating channel`);
+            createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
+                createChannel(msg.channel.guild, `${gameName}-lobby`);
+                console.info(`Creating game`);
+                let game = domGame.create(channel, gameName, msg.client);
+                console.info(`Saving game`);
+                util.saveJSON(game.name, game);
+                console.info(`Hosting game`);
+                domGame.hostGame(game);
+                setTimeout(() => {
+                    console.info(`Watching game`);
+                    status.startWatches(game);
+                }, 3000);
+            });
             break;
         case 'delete':
             deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
@@ -69,8 +91,17 @@ function handleCommand(msg){
         case 'start':
             util.domcmd.startGame({name: arg});
             break;
-        case 'watch': 
-            status.startWatches({name: arg, discord:{channel:msg.channel}});
+        // case 'watch': 
+        //     status.startWatches({name: arg, discord:{channel:msg.channel}});
+        //     break;
+        case 'ping':
+            msg.channel.send('ping @Lexxicon').then(sent => {
+                if(pingMsgs[sent.channel.id]){
+                    pingMsgs[sent.channel.id].delete();
+                }
+                pingMsgs[sent.channel.id] = sent;
+            })
+
             break;
         default:
             console.warn(`unsupported command! ${command}`);

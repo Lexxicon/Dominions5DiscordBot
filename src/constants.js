@@ -19,9 +19,9 @@ module.exports = {
         ":no_entry_sign:": "🚫",
     },
     ERA: {
-        "EARLY": "--era 1",
-        "MIDDLE": "--era 2",
-        "LATE": "--era 3"
+        "EARLY": ["--era","1"],
+        "MIDDLE": ["--era","2"],
+        "LATE": ["--era","3"]
     },
     STORY_EVENTS: {
         "NONE": "--nostoryevents",
@@ -29,22 +29,22 @@ module.exports = {
         "ALL": "--allstoryevents"
     },
     EVENTS: {
-        "COMMON": "--eventrarity 1",
-        "RARE": "--eventrarity 2"
+        "COMMON": ["--eventrarity","1"],
+        "RARE": ["--eventrarity","2"]
     },
     SLOTS: {
-        "BANNED": "--closed __NATION_ID__",
-        "EASY": "--easyai __NATION_ID__",
-        "NORMAL": "--normai __NATION_ID__",
-        "DIFFICULT": "--diffai __NATION_ID__",
-        "MIGHTY": "--mightyai __NATION_ID__",
-        "MASTER": "--masterai __NATION_ID__",
-        "IMPOSSIBLE": "--impai __NATION_ID__"
+        "BANNED": "--closed",
+        "EASY": "--easyai",
+        "NORMAL": "--normai",
+        "DIFFICULT": "--diffai",
+        "MIGHTY": "--mightyai",
+        "MASTER": "--masterai",
+        "IMPOSSIBLE": "--impai"
     },
     SIMPLE_RAND_MAP: {
-        "SMALL": "--randmap 10",
-        "MEDIUM": "--randmap 15",
-        "LARGE": "--randmap 20"
+        "SMALL": ["--randmap","10"],
+        "MEDIUM": ["--randmap","15"],
+        "LARGE": ["--randmap","20"]
     },
     PLAYER_STATUS: {
         "-2": {
