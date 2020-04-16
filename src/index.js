@@ -9,6 +9,7 @@ const dominionsStatus = require("./dominionsStatus.js");
 const domGame = require('./dominionsGame.js');
 
 const lobbyCommandHandler = require('./lobbyCommands.js');
+const gameCommandHandler = require('./gameCommands.js');
 
 const bot = new Discord.Client();
 const TOKEN = process.env.TOKEN;
@@ -44,9 +45,16 @@ bot.on('ready', () => {
 });
 
 bot.on('message', msg => {
-    if (msg.channel.name === LOBBY_NAME && msg.content.startsWith('!')) {
+    if( msg.content.startsWith('!')){
+        let handler = null;
+
+        if (msg.channel.name === LOBBY_NAME) {
+            handler = lobbyCommandHandler;
+        }else{
+            handler = gameCommandHandler;
+        }
         msg.react(util.emoji(':thumbsup:')).then(r => {
-            lobbyCommandHandler(msg);
+            handler(msg);
         }).then( r => {
             msg.reactions.removeAll();
         }).catch( err => {

@@ -49,14 +49,19 @@ function parseLines(lines){
     return gameState;
 }
 
-function createEmbeddedGameState(gameState){
+function createEmbeddedGameState(game, gameState){
     const fields = [];
     let activeNames = [];
     let activePlayers = [];
     let activeState = [];
 
     const addRecord = (s) => {
-        activeNames.push(s.name);
+        
+        if(gameState.turnState.turn >= 0){
+            activeNames.push(s.name);
+        }else{
+            activeNames.push(`[${s.nationId}] ${s.name}`);
+        }
         activePlayers.push(s.playerStatus.display);
 
         if(s.playerStatus.id == 1){
@@ -88,18 +93,21 @@ function createEmbeddedGameState(gameState){
         inline: true
     });
 
-    let desc;
+    let desc = [];
+
+    desc.push(`Hosted at: ${config.HOST_URL}\n`);
+    desc.push(`\tPort: `);
 
     if(gameState.turnState.turn < 0){
-        desc = "Lobby"
+        desc.push("Lobby");
     } else{
-        desc = `Turn: ${gameState.turnState.turn}`;
+        desc.push(`Turn: ${gameState.turnState.turn}`);
     }
 
     const embeddedMessage = new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setTitle(`Game State for: ${gameState.name}`)
-        .setDescription(desc)
+        .setDescription(_.join(desc, '\n'))
         .addFields(
             fields
         );
@@ -118,28 +126,37 @@ function read(path, cb){
 }
 
 function watchStatusFile(filePath, game){
+    console.info(`Setting up watch for ${game.name}`);
     game.getChannel(c => {
-        c.messages.fetch(game.discord.turnStateMessageId).then(
-            msg =>{
-                fs.watch(filePath, 'utf8', (event, file) => {
+        console.info(c);
+        c.messages.fetch(game.discord.turnStateMessageId)
+            .then( msg =>{
+                let update = () => {
                     console.info(`updating ${game.name}`);
                     read(filePath, (lines) => {
-                        currentTurnState = parseLines(lines);
-                        msg.edit(createEmbeddedGameState(currentTurnState));
+                        let currentTurnState = parseLines(lines);
+                        msg.edit(createEmbeddedGameState(game, currentTurnState));
+                        if(game.turn != currentTurnState.turn){
+                            game.turn = currentTurnState.turn
+                            domGame.pingPlayers(game, `Start of turn ${game.turn}`,
+                                (m) => {
+                                    domGame.saveGame(game)
+                                });
+                        }
                     });
-                });
-
-            }
-        );
+                }
+                fs.watch(filePath, 'utf8', update);
+                update();
+                game.update = update;
+            });
     });
 }
 
 function startWatches(game) {
     const filePath = `${config.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
-    
     if(!game.discord.turnStateMessageId){
         read(filePath, (lines) => {
-            const embeddedMessage = createEmbeddedGameState(parseLines(lines));
+            const embeddedMessage = createEmbeddedGameState(game, parseLines(lines));
             game.getChannel(c => {
                 c.send(embeddedMessage).then(msg => {
                     game.discord.turnStateMessageId = msg.id;

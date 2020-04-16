@@ -42,9 +42,9 @@ module.exports = {
         "IMPOSSIBLE": "--impai"
     },
     SIMPLE_RAND_MAP: {
-        "SMALL": ["--randmap","10"],
-        "MEDIUM": ["--randmap","15"],
-        "LARGE": ["--randmap","20"]
+        "SMALL": ["--randmap", "10", "--vwrap"],
+        "MEDIUM": ["--randmap", "15", "--vwrap"],
+        "LARGE": ["--randmap", "20", "--vwrap"]
     },
     PLAYER_STATUS: {
         "-2": {

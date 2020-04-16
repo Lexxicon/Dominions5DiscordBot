@@ -72,9 +72,15 @@ function handleCommand(msg){
 
             console.info(`Creating channel`);
             createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
-                createChannel(msg.channel.guild, `${gameName}-lobby`);
                 console.info(`Creating game`);
                 let game = domGame.create(channel, gameName, msg.client);
+                createChannel(msg.channel.guild, `${gameName}-lobby`, (c) => game.discord.gameLobbyChannelId = c.id);
+                msg.guild.roles.create({
+                    name:`${gameName}-player`,
+                    mentionable: true
+                }).then(r => {
+                    game.discord.playerRoleId = r.id;
+                })
                 console.info(`Saving game`);
                 util.saveJSON(game.name, game);
                 console.info(`Hosting game`);
@@ -82,6 +88,7 @@ function handleCommand(msg){
                 setTimeout(() => {
                     console.info(`Watching game`);
                     status.startWatches(game);
+                    util.saveJSON(game.name, game);
                 }, 3000);
             });
             break;
@@ -91,17 +98,21 @@ function handleCommand(msg){
         case 'start':
             util.domcmd.startGame({name: arg});
             break;
-        // case 'watch': 
-        //     status.startWatches({name: arg, discord:{channel:msg.channel}});
-        //     break;
         case 'ping':
-            msg.channel.send('ping @Lexxicon').then(sent => {
+            msg.channel.send('ping <@&699768621496533102>').then(sent => {
                 if(pingMsgs[sent.channel.id]){
                     pingMsgs[sent.channel.id].delete();
                 }
                 pingMsgs[sent.channel.id] = sent;
             })
 
+            break;
+        case 'roles':
+            msg.guild.roles.fetch()
+                .then(role => {
+                    console.info(role);
+                    console.log(`There are ${role.cache.size} roles.`);
+                });
             break;
         default:
             console.warn(`unsupported command! ${command}`);

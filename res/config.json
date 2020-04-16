@@ -7,6 +7,7 @@
     "BOT_SAVE_PATH":"/home/steam/.dominions5bot/data/",
     "DOMINION_EXEC_PATH":"/home/steam/Steam/steamapps/common/Dominions5/dom5.sh",
     "DEFAULT_PORT": 1024,
+    "HOST_URL":"lexxicon.crabdance.com",
     "GAME_NAME_PREFIX": [
         "Abnormal",
         "Bewildering", 

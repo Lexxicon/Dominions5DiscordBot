@@ -52,8 +52,10 @@ function create(channel, name, bot){
         },
         discord: {
             channelId: channel.id,
+            gameLobbyChannelId: null,
             turnStateMessageId: null,
             pingMessageId: null,
+            playerRoleId: null,
             players:{
                 //playerId : nationId
             }
@@ -61,6 +63,25 @@ function create(channel, name, bot){
     };
     console.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
     return wrapGame(game, bot);
+}
+
+function getGames(){
+    return games;
+}
+
+function pingPlayers(game, msg, cb){
+    if(game.discord.playerRoleId){
+        game.getChannel(channel => {
+            channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
+                .then(m => {
+                    if(game.discord.turnStateMessageId){
+                        channel.messages.delete(game.discord.turnStateMessageId);
+                    }
+                    game.discord.turnStateMessageId = m.id;
+                    cb(m);
+                });
+        });
+    }
 }
 
 function hostGame(game){
@@ -92,7 +113,7 @@ function wrapGame(game, bot){
     let channel = null;
     game.getChannel = (cb) => {
         if(channel === null){
-            channel = bot.channels.fetch(game.discord.channelId, true).then(c => {
+           bot.channels.fetch(game.discord.channelId, true).then(c => {
                 channel = c;
                 cb(c);
             });
@@ -112,7 +133,6 @@ function wrapGame(game, bot){
             cb(guild);
         }
     }
-
     games[game.name] = game;
 
     return game;
@@ -184,5 +204,7 @@ module.exports = {
     getLaunchArgs,
     loadGame,
     saveGame,
-    hostGame
+    hostGame,
+    pingPlayers,
+    getGames
 };
