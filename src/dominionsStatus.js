@@ -56,13 +56,26 @@ function createEmbeddedGameState(game, gameState){
     let activeState = [];
 
     const addRecord = (s) => {
+        if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
+            return;
+        }
         
         if(gameState.turnState.turn >= 0){
             activeNames.push(s.name);
         }else{
             activeNames.push(`[${s.nationId}] ${s.name}`);
         }
-        activePlayers.push(s.playerStatus.display);
+
+        let playerName;
+        if(s.aiDifficulty > 0){
+            playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
+        }else{
+            playerName = game.getDisplayName(s.nationId);
+        }
+        if(s.playerStatus.id < 0){
+            playerName = `[${s.playerStatus.display}] ${playerName}`;
+        }
+        activePlayers.push(playerName);
 
         if(s.playerStatus.id == 1){
             activeState.push(s.turnState.display);
@@ -95,8 +108,8 @@ function createEmbeddedGameState(game, gameState){
 
     let desc = [];
 
-    desc.push(`Hosted at: ${config.HOST_URL}\n`);
-    desc.push(`\tPort: `);
+    desc.push(`Hosted at: ${config.HOST_URL}`);
+    desc.push(`Port: ${game.settings.server.port}\n`);
 
     if(gameState.turnState.turn < 0){
         desc.push("Lobby");

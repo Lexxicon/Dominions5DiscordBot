@@ -29,7 +29,7 @@ function handleCommand(msg){
                 if(roleID){
                     msg.guild.roles.fetch(roleID)
                         .then(role => {
-                            msg.member.addRole(role);
+                            msg.member.roles.add(role);
                         });
                 }
 
@@ -44,6 +44,7 @@ function handleCommand(msg){
                             }
                         }
                         game.discord.players[msg.member.id] = arg;
+                        game.save();
                     }else {
                         //invalid race id
                         msg.channel.send(`Invalid race for given era! era: ${game.settings.setup.era}, arg: ${arg}`)

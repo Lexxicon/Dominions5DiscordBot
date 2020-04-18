@@ -133,6 +133,32 @@ function wrapGame(game, bot){
             cb(guild);
         }
     }
+    game.save = () => {saveGame(game)};
+    game.getPlayerForNation = (nationId) => {
+        for( userID in game.discord.players ){
+            if(game.discord.players[userID] == nationId)
+                return userID;
+        }
+        return null;
+    };
+    game.getDisplayName = (nationId) => {
+        let playerId = getPlayerForNation(nationId);
+        if(playerId){
+            let player = bot.users.cache.get(playerId);
+            if(!player){
+                bot.users.fetch(playerId, true);
+                return 'Loading...';
+            }else{
+                return player.username;
+            }
+        }
+        return '-';
+    };
+    
+    for( userID in game.discord.players ){
+        bot.users.fetch(userID, true);
+    }
+
     games[game.name] = game;
 
     return game;
