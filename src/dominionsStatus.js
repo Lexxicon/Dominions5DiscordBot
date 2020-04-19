@@ -60,11 +60,7 @@ function createEmbeddedGameState(game, gameState){
             return;
         }
         
-        if(gameState.turnState.turn >= 0){
-            activeNames.push(s.name);
-        }else{
-            activeNames.push(`[${s.nationId}] ${s.name}`);
-        }
+        activeNames.push(`[${s.nationId}] ${s.name}`);
 
         let playerName;
         if(s.aiDifficulty > 0){

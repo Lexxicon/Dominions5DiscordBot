@@ -74,10 +74,10 @@ function pingPlayers(game, msg, cb){
         game.getChannel(channel => {
             channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
                 .then(m => {
-                    if(game.discord.turnStateMessageId){
-                        channel.messages.delete(game.discord.turnStateMessageId);
+                    if(game.discord.pingMessageId){
+                        channel.messages.delete(game.discord.pingMessageId);
                     }
-                    game.discord.turnStateMessageId = m.id;
+                    game.discord.pingMessageId = m.id;
                     cb(m);
                 });
         });
@@ -142,7 +142,7 @@ function wrapGame(game, bot){
         return null;
     };
     game.getDisplayName = (nationId) => {
-        let playerId = getPlayerForNation(nationId);
+        let playerId = game.getPlayerForNation(nationId);
         if(playerId){
             let player = bot.users.cache.get(playerId);
             if(!player){
