@@ -145,9 +145,9 @@ function watchStatusFile(filePath, game){
                     read(filePath, (lines) => {
                         let currentTurnState = parseLines(lines);
                         msg.edit(createEmbeddedGameState(game, currentTurnState));
-                        if(game.turn != currentTurnState.turn){
-                            game.turn = currentTurnState.turn
-                            domGame.pingPlayers(game, `Start of turn ${game.turn}`,
+                        if(game.state.turn != currentTurnState.turnState.turn){
+                            game.state.turn = currentTurnState.turnState.turn
+                            domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
                                 (m) => {
                                     domGame.saveGame(game)
                                 });

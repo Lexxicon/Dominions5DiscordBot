@@ -73,4 +73,7 @@ bot.login(TOKEN).then(s => {
             dominionsStatus.startWatches(game);
         });
     });
+}).catch(err => {
+    console.error(err);
+    throw err;
 });
