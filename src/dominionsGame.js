@@ -3,6 +3,10 @@ const _ = require("lodash");
 const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
+const spawn = require('child_process').spawn;
+
+const ports = {};
+_.forEach(config.PORTS, p => ports[p] = null);
 
 const games = {};
 
@@ -25,7 +29,7 @@ function create(channel, name, bot){
         },
         settings: {
             server: {
-                port: config.DEFAULT_PORT
+                port: null
             },
             turns:{
                 quickHost: true,
@@ -85,13 +89,37 @@ function pingPlayers(game, msg, cb){
 }
 
 function hostGame(game){
-    const spawn = require('child_process').spawn;
+    if(ports[game.settings.server.port] !== null){
+        if(ports[game.settings.server.port] === game){
+            console.warn(`Game seems already hosted. Game: ${game.name}, Port: ${game.settings.server.port}`);
+        }else if(ports[game.settings.server.port]){
+            throw `A game is already hosted on port! Other Game: ${ports[game.settings.server.port].name}, Port: ${game.settings.server.port}`;
+        }else{
+            throw `Port is not available! Port: ${game.settings.server.port}`;
+        }
+    }
+
+    if(!game.settings.server.port){
+        let port = _.findKey(ports, p => p === null);
+        if(port){
+            game.settings.server.port = port;
+            game.save();
+        }else{
+            throw `Failed to host! No available ports! Game: ${game.name}`;
+        }
+    }
+
     const args = getLaunchArgs(game);
     console.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
     const process = spawn(config.DOMINION_EXEC_PATH, args, {stdio: 'inherit'});
 
+    ports[game.settings.server.port] = game;
+
     process.on('close', (code, sig) => {
         delete game.getProcess;
+        if(ports[game.settings.server.port] === game){
+            ports[game.settings.server.port] = null;
+        }
     });
 
     game.getProcess = () => process;
@@ -110,6 +138,9 @@ function saveGame(game){
 }
 
 function wrapGame(game, bot){
+    if(game.state.nextTurnStartTime){
+        game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime);
+    }
     let channel = null;
     game.getChannel = (cb) => {
         if(channel === null){
@@ -196,8 +227,7 @@ function getLaunchArgs(config){
     args.push("--noclientstart");
     args.push("--masterpass");
     args.push(setup.masterPass);
-    args.push("--thrones");
-    args.push(_.join(setup.thrones, " "));
+    args.push("--thrones", setup.thrones[0], setup.thrones[1], setup.thrones[2]);
     if(setup.victoryPoints){
         args.push("--requiredap");
         args.push(setup.victoryPoints);

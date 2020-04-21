@@ -111,6 +111,9 @@ function createEmbeddedGameState(game, gameState){
         desc.push("Lobby");
     } else{
         desc.push(`Turn: ${gameState.turnState.turn}`);
+        if(game.state.nextTurnStartTime){
+            desc.push(`Auto Host at: ${game.state.nextTurnStartTime}`);
+        }
     }
 
     const embeddedMessage = new Discord.MessageEmbed()
@@ -134,26 +137,32 @@ function read(path, cb){
     });
 }
 
+function bindUpdateGameStatus(msg, filePath, game){
+    return () => {
+        console.info(`updating ${game.name}`);
+        read(filePath, (lines) => {
+            let currentTurnState = parseLines(lines);
+            if(game.state.turn < currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
+                game.state.turn = currentTurnState.turnState.turn;
+                if(game.settings.turns.maxTurnTime){
+                    game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
+                }
+                domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
+                    (m) => {
+                        domGame.saveGame(game)
+                    });
+            }
+            msg.edit(createEmbeddedGameState(game, currentTurnState));
+        });
+    }
+}
+
 function watchStatusFile(filePath, game){
     console.info(`Setting up watch for ${game.name}`);
     game.getChannel(c => {
-        console.info(c);
         c.messages.fetch(game.discord.turnStateMessageId)
             .then( msg =>{
-                let update = () => {
-                    console.info(`updating ${game.name}`);
-                    read(filePath, (lines) => {
-                        let currentTurnState = parseLines(lines);
-                        msg.edit(createEmbeddedGameState(game, currentTurnState));
-                        if(game.state.turn != currentTurnState.turnState.turn){
-                            game.state.turn = currentTurnState.turnState.turn
-                            domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
-                                (m) => {
-                                    domGame.saveGame(game)
-                                });
-                        }
-                    });
-                }
+                let update = bindUpdateGameStatus(msg, filePath, game);
                 fs.watch(filePath, 'utf8', update);
                 update();
                 game.update = update;

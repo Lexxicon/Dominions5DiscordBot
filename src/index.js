@@ -1,4 +1,6 @@
+require('./prototypes.js');
 require('dotenv').config();
+
 const _ = require("lodash");
 const Discord = require('discord.js');
 const fs = require('fs');
@@ -71,6 +73,10 @@ bot.login(TOKEN).then(s => {
         domGame.loadGame(f, bot, game => {
             domGame.hostGame(game);
             dominionsStatus.startWatches(game);
+            console.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
+            if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
+                util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
+            }
         });
     });
 }).catch(err => {

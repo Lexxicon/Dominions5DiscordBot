@@ -83,8 +83,8 @@ module.exports = {
         return guild.channels.cache.find(c => c.name === name);
     },
     domcmd: {
-        startGame: function(game, cb = null){
-            domcmd('settimeleft 15', game, cb);
+        startGame: function(game, seconds = 15, cb = null){
+            domcmd(`settimeleft ${seconds}`, game, cb);
         }
     },
     emoji,
