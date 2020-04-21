@@ -17,6 +17,7 @@ module.exports = {
         ":ten:":        "🔟",
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
+        ":thinking:":   "🤔",
     },
     ERA: {
         "EARLY": ["--era","1"],

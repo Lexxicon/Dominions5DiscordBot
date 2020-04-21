@@ -25,7 +25,7 @@ function parseLines(lines){
                 nationId: groups.NATION_ID,
                 pretenderId: groups.PRETENDER_ID,
                 stringId: groups.STRING_ID,
-                aiDifficulty: CONSTANTS.AI_DIFFICULTY[groups.AI_DIFFICULTY],
+                aiDifficulty: groups.AI_DIFFICULTY,
                 playerStatus: CONSTANTS.PLAYER_STATUS[groups.PLAYER_STATUS],
                 name: groups.NAME,
                 title: groups.TITLE,
@@ -59,7 +59,7 @@ function createEmbeddedGameState(game, gameState){
         if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
             return;
         }
-        
+        if(game.name == 'Wicked-Oasis') console.info(s);
         activeNames.push(`[${s.nationId}] ${s.name}`);
 
         let playerName;
@@ -67,6 +67,9 @@ function createEmbeddedGameState(game, gameState){
             playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
         }else{
             playerName = game.getDisplayName(s.nationId);
+            if(playerName == '-'){
+                playerName = s.playerStatus.display;
+            }
         }
         if(s.playerStatus.id < 0){
             playerName = `[${s.playerStatus.display}] ${playerName}`;

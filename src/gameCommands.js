@@ -44,6 +44,10 @@ function handleCommand(msg){
                             }
                         }
                         game.discord.players[msg.member.id] = arg;
+                        setTimeout(() => {
+                            if(game.update) game.update();
+                            msg.channel.send(`Joined ${game.getDisplayName(arg)} as ${races[game.settings.setup.era][arg]}`);
+                        }, 1000);
                         game.save();
                     }else {
                         //invalid race id

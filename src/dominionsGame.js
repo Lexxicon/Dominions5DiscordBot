@@ -11,10 +11,10 @@ _.forEach(config.PORTS, p => ports[p] = null);
 const games = {};
 
 function killGames(){
-    _.keys(games, (key) => {
-        if(games[key].getProcess){
-            games[key].getProcess().kill();
-            delete games[key].getProcess;
+    _.keys(ports, (key) => {
+        if(ports[key].getProcess){
+            ports[key].getProcess().kill();
+            delete ports[key].getProcess;
         }
     });
 }
@@ -29,7 +29,7 @@ function create(channel, name, bot){
         },
         settings: {
             server: {
-                port: null
+                port: 1025
             },
             turns:{
                 quickHost: true,

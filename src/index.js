@@ -55,10 +55,11 @@ bot.on('message', msg => {
         }else{
             handler = gameCommandHandler;
         }
-        msg.react(util.emoji(':thumbsup:')).then(r => {
+        msg.react(util.emoji(':thinking:')).then(r => {
             handler(msg);
         }).then( r => {
             msg.reactions.removeAll();
+            msg.react(util.emoji(':thumbsup:'))
         }).catch( err => {
             msg.reactions.removeAll();
             msg.react(util.emoji(':thumbsdown:'))

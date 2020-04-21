@@ -74,13 +74,21 @@ function handleCommand(msg){
             createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
                 console.info(`Creating game`);
                 let game = domGame.create(channel, gameName, msg.client);
-                createChannel(msg.channel.guild, `${gameName}-lobby`, (c) => game.discord.gameLobbyChannelId = c.id);
+                createChannel(msg.channel.guild, `${gameName}-lobby`, `Created by request of ${msg.author.username}`, (c) => {
+                    game.discord.gameLobbyChannelId = c.id;
+                    game.save();
+                });
                 msg.guild.roles.create({
-                    name:`${gameName}-player`,
-                    mentionable: true
+                    data: {
+                        name:`${gameName}-player`,
+                        mentionable: true
+                    }
                 }).then(r => {
                     game.discord.playerRoleId = r.id;
-                })
+                }).catch(err => {
+                    console.error(err);
+                    throw err;
+                });
                 console.info(`Saving game`);
                 util.saveJSON(game.name, game);
                 console.info(`Hosting game`);
