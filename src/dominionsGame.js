@@ -1,5 +1,6 @@
 
 const _ = require("lodash");
+const fs = require("fs");
 const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
@@ -29,7 +30,7 @@ function create(channel, name, bot){
         },
         settings: {
             server: {
-                port: 1025
+                port: null
             },
             turns:{
                 quickHost: true,
@@ -123,6 +124,48 @@ function hostGame(game){
     });
 
     game.getProcess = () => process;
+}
+
+function stopGame(game){
+    if(game.getProcess){
+        game.getProcess().kill();
+        delete game.getProcess;
+    }
+    if(ports[game.settings.server.port] === game){
+        ports[game.settings.server.port] = null;
+    }
+}
+
+function unloadGame(game){
+    stopGame(game);
+    if(games[game.name] === game){
+        delete games[game.name];
+    }
+}
+
+function deleteGame(game) {
+    unloadGame();
+    game.getGuild(guild => {
+        if(game.discord.playerRoleId){
+            guild.roles.fetch(game.discord.playerRoleId)
+                .then(r => r.delete())
+                .catch(console.error);
+        }
+
+        if(game.discord.channelId){
+            guild.client.channels.fetch(game.discord.channelId)
+                .then(c => c.delete())
+                .catch(console.error);
+        }
+
+        if(game.discord.gameLobbyChannelId){
+            guild.client.channels.fetch(game.discord.gameLobbyChannelId)
+                .then(c => c.delete())
+                .catch(console.error);
+        }
+    });
+    fs.rmdir(`${config.DOMINION_SAVE_PATH}${game.name}`, {recursive: true});
+    fs.unlink(`${config.BOT_SAVE_PATH}${game.name}.json`);
 }
 
 function loadGame(name, bot, cb){

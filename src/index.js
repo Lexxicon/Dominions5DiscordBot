@@ -55,14 +55,19 @@ bot.on('message', msg => {
         }else{
             handler = gameCommandHandler;
         }
+        let result = 0;
         msg.react(util.emoji(':thinking:')).then(r => {
-            handler(msg);
+            result = handler(msg);
         }).then( r => {
             msg.reactions.removeAll();
-            msg.react(util.emoji(':thumbsup:'))
+            if(result >= 0){
+                msg.react(util.emoji(':thumbsup:'));
+            }else{
+                msg.react(util.emoji(':thumbsdown:'));
+            }
         }).catch( err => {
             msg.reactions.removeAll();
-            msg.react(util.emoji(':thumbsdown:'))
+            msg.react(util.emoji(':no_entry_sign:'))
             console.error(err);
         });
     }
@@ -74,8 +79,8 @@ bot.login(TOKEN).then(s => {
         domGame.loadGame(f, bot, game => {
             domGame.hostGame(game);
             dominionsStatus.startWatches(game);
-            console.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
             if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
+                console.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
                 util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
             }
         });

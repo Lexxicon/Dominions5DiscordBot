@@ -52,6 +52,41 @@ function deleteChannel(guild, name, reason){
     channel.delete(reason);
 }
 
+function createNewGame(msg){
+    let gameName = util.generateName();
+    console.info(`Creating ${gameName}`);
+
+    console.info(`Creating channel`);
+    createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
+        console.info(`Creating game`);
+        let game = domGame.create(channel, gameName, msg.client);
+        createChannel(msg.channel.guild, `${gameName}-lobby`, `Created by request of ${msg.author.username}`, (c) => {
+            game.discord.gameLobbyChannelId = c.id;
+            game.save();
+        });
+        msg.guild.roles.create({
+            data: {
+                name:`${gameName}-player`,
+                mentionable: true
+            }
+        }).then(r => {
+            game.discord.playerRoleId = r.id;
+        }).catch(err => {
+            console.error(err);
+            throw err;
+        });
+        console.info(`Saving game`);
+        util.saveJSON(game.name, game);
+        console.info(`Hosting game`);
+        domGame.hostGame(game);
+        setTimeout(() => {
+            console.info(`Watching game`);
+            status.startWatches(game);
+            util.saveJSON(game.name, game);
+        }, 3000);
+    });
+}
+
 let pingMsgs = {};
 
 function handleCommand(msg){
@@ -67,38 +102,7 @@ function handleCommand(msg){
     const arg = split >= input.length ? '' : input.substring(split + 1);
     switch (command) {
         case 'host':
-            let gameName = util.generateName();
-            console.info(`Creating ${gameName}`);
-
-            console.info(`Creating channel`);
-            createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
-                console.info(`Creating game`);
-                let game = domGame.create(channel, gameName, msg.client);
-                createChannel(msg.channel.guild, `${gameName}-lobby`, `Created by request of ${msg.author.username}`, (c) => {
-                    game.discord.gameLobbyChannelId = c.id;
-                    game.save();
-                });
-                msg.guild.roles.create({
-                    data: {
-                        name:`${gameName}-player`,
-                        mentionable: true
-                    }
-                }).then(r => {
-                    game.discord.playerRoleId = r.id;
-                }).catch(err => {
-                    console.error(err);
-                    throw err;
-                });
-                console.info(`Saving game`);
-                util.saveJSON(game.name, game);
-                console.info(`Hosting game`);
-                domGame.hostGame(game);
-                setTimeout(() => {
-                    console.info(`Watching game`);
-                    status.startWatches(game);
-                    util.saveJSON(game.name, game);
-                }, 3000);
-            });
+            createNewGame(msg);
             break;
         case 'delete':
             deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
@@ -124,8 +128,9 @@ function handleCommand(msg){
             break;
         default:
             console.warn(`unsupported command! ${command}`);
-            break;
+            return -1;
     }
+    return 0;
 }
 
 module.exports = handleCommand;
