@@ -59,7 +59,6 @@ function createEmbeddedGameState(game, gameState){
         if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
             return;
         }
-        if(game.name == 'Wicked-Oasis') console.info(s);
         activeNames.push(`[${s.nationId}] ${s.name}`);
 
         let playerName;
@@ -131,6 +130,7 @@ function createEmbeddedGameState(game, gameState){
 }
 
 function read(path, cb){
+    console.log('reading ' + path)
     fs.readFile(path, 'utf8', (err, data) => {
         if(err){
             console.warn(err);
@@ -145,7 +145,7 @@ function bindUpdateGameStatus(msg, filePath, game){
         console.info(`updating ${game.name}`);
         read(filePath, (lines) => {
             let currentTurnState = parseLines(lines);
-            if(game.state.turn < currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
+            if(game.state.turn != currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
                 game.state.turn = currentTurnState.turnState.turn;
                 if(game.settings.turns.maxTurnTime){
                     game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);

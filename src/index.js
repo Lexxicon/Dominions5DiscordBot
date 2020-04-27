@@ -37,7 +37,7 @@ process.on('SIGINT', function () {
 
 //catch uncaught exceptions, trace, then exit normally
 process.on('uncaughtException', function(e) {
-  console.log('Uncaught Exception...');
+  console.log(`Uncaught Exception... ${e} ${e.name}`);
   console.log(e.stack);
   process.exit(99);
 });
