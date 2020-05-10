@@ -22,24 +22,24 @@ function parseLines(lines){
         if(NATION_REGEX.test(line)){
             const groups = line.match(NATION_REGEX).groups;
             gameState.playerStatus.push({
-                nationId: groups.NATION_ID,
-                pretenderId: groups.PRETENDER_ID,
+                nationId: Number(groups.NATION_ID),
+                pretenderId: Number(groups.PRETENDER_ID),
                 stringId: groups.STRING_ID,
-                aiDifficulty: groups.AI_DIFFICULTY,
+                aiDifficulty: Number(groups.AI_DIFFICULTY),
                 playerStatus: CONSTANTS.PLAYER_STATUS[groups.PLAYER_STATUS],
                 name: groups.NAME,
                 title: groups.TITLE,
-                turnState: CONSTANTS.TURN_STATE[groups.TURN_STATE],
+                turnState: Number(CONSTANTS.TURN_STATE[groups.TURN_STATE]),
             });
         }else if(STATUS_REGEX.test(line)){
             gameState.name = line.match(STATUS_REGEX).groups.GAME_NAME;
         }else if(TURN_REGEX.test(line)){
             const groups = line.match(TURN_REGEX).groups;
             gameState.turnState = {
-                turn: groups.TURN,
+                turn: Number(groups.TURN),
                 era: groups.ERA,
                 mods: groups.MODS,
-                turnLimit: groups.TURN_LIMIT
+                turnLimit: Number(groups.TURN_LIMIT)
             };
         }
     }
