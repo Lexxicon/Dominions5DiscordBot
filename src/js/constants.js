@@ -1,4 +1,3 @@
-
 module.exports = {
     EMOJI: {
         ":thumbsup:":   "👍",
@@ -18,6 +17,7 @@ module.exports = {
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
         ":thinking:":   "🤔",
+        ":exploding_head:": "🤯"
     },
     ERA: {
         "EARLY": ["--era","1"],
@@ -35,6 +35,7 @@ module.exports = {
     },
     SLOTS: {
         "BANNED": "--closed",
+        "OPEN": "",
         "EASY": "--easyai",
         "NORMAL": "--normai",
         "DIFFICULT": "--diffai",
@@ -45,7 +46,8 @@ module.exports = {
     SIMPLE_RAND_MAP: {
         "SMALL": ["--randmap", "10", "--vwrap"],
         "MEDIUM": ["--randmap", "15", "--vwrap"],
-        "LARGE": ["--randmap", "20", "--vwrap"]
+        "LARGE": ["--randmap", "20", "--vwrap"],
+        "XLARGE": ["--randmap", "25", "--vwrap"]
     },
     PLAYER_STATUS: {
         "-2": {
@@ -100,6 +102,60 @@ module.exports = {
             ready: false,
             display: "-"
         }
-    }
-
+    },
+    GAME_NAME_PREFIX: [
+        "Acrid",
+        "Brave", 
+        "Calm", 
+        "Dark", 
+        "Epic", 
+        "Fiery", 
+        "Grim", 
+        "Heroic", 
+        "Icy", 
+        "Joyous", 
+        "Kindly",
+        "Lost",
+        "Magic",
+        "Nasty",
+        "Old",
+        "Petty",
+        "Quiet",
+        "Regal",
+        "Sacred",
+        "Tense",
+        "Upset",
+        "Vain",
+        "Wicked",
+        "Xeric",
+        "Young",
+        "Zesty"],
+    GAME_NAME_SUFFIX:[
+        "Atoll",
+        "Brand", 
+        "Cave", 
+        "Desert", 
+        "Expanse", 
+        "Fort", 
+        "Glade", 
+        "Hills", 
+        "Inn", 
+        "Jarl", 
+        "Kettle",
+        "Lands",
+        "Mask",
+        "Nation",
+        "Oasis",
+        "Parish",
+        "Quest",
+        "Relic",
+        "Sanctum",
+        "Tunnel",
+        "Utopia",
+        "Volcano",
+        "Wilds",
+        "Xenolith",
+        "Yurt",
+        "Zenith"
+    ]
 }
