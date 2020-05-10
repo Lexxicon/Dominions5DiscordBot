@@ -1,1 +1,1 @@
-app_update 722060 validate
+Setup a `.env` file with values specific for your server
