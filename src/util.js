@@ -78,6 +78,17 @@ function generateName(){
     throw new 'Failed to create valid name after 30 tries';
 }
 
+function getSeconds(str) {
+    let seconds = 0;
+    let days = str.match(/(\d+)\s*d/);
+    let hours = str.match(/(\d+)\s*h/);
+    let minutes = str.match(/(\d+)\s*m/);
+    if (days) { seconds += parseInt(days[1])*86400; }
+    if (hours) { seconds += parseInt(hours[1])*3600; }
+    if (minutes) { seconds += parseInt(minutes[1])*60; }
+    return seconds;
+  }
+
 module.exports = {
     findChannel: function (guild, name) {
         return guild.channels.cache.find(c => c.name === name);
@@ -91,5 +102,6 @@ module.exports = {
     saveJSON,
     loadJSON,
     generateName,
-    loadAllGames
+    loadAllGames,
+    getSeconds
 };

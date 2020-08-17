@@ -107,9 +107,6 @@ function handleCommand(msg){
         case 'delete':
             deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
             break;
-        case 'start':
-            util.domcmd.startGame({name: arg});
-            break;
         case 'ping':
             msg.channel.send('ping <@&699768621496533102>').then(sent => {
                 if(pingMsgs[sent.channel.id]){

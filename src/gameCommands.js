@@ -5,6 +5,7 @@ const races = require("../res/races.json");
 const util = require('./util.js');
 const status = require('./dominionsStatus.js');
 const domGame = require('./dominionsGame.js');
+const constants = require('./constants.js');
 
 function joinUser(msg, game, nationID){
     let roleID = game.discord.playerRoleId;
@@ -15,7 +16,7 @@ function joinUser(msg, game, nationID){
             });
     }
 
-    if(arg){
+    if(nationID){
         if(game.discord.players[msg.member.id]){
             msg.channel.send(`You've already joined!: ${races[game.settings.setup.era][game.discord.players[msg.member.id]]}`);
         }else if(races[game.settings.setup.era][nationID]) {
@@ -62,6 +63,52 @@ function switchUser(msg, game, nationID){
     return 0;
 }
 
+function delayTurn(msg, game, arg) {
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return -1;
+    }
+
+    let seconds = util.getSeconds(arg);
+
+    game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime + (seconds * 1000));
+    console.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
+    util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
+
+    msg.channel.send(`Turn delayed until ${game.state.nextTurnStartTime}`);
+
+    return 0;
+}
+
+function deleteGame(msg, game, arg) {
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return -1;
+    }
+    
+}
+
+function startGame(msg, game, arg) {
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return -1;
+    }
+    let playerCount = keys(game.discord.players).length;
+    let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
+
+    let provinces = playerCount * provPerPlayer;
+
+    game.settings.setup.victoryPoints =  Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
+    game.settings.setup.thrones[0] = Math.ceil(game.settings.setup.victoryPoints * 0.60);
+    game.settings.setup.thrones[1] = Math.ceil(game.settings.setup.victoryPoints * 0.35);
+    game.settings.setup.thrones[2] = Math.ceil(game.settings.setup.victoryPoints * 0.15);
+
+    domGame.saveGame(game);
+    domGame.stopGame(game);
+    domGame.hostGame(game);
+
+    util.domcmd.startGame({name: game.name});
+
+    return 0;
+}
+
 function handleCommand(msg){
     const input = msg.content.substring(1);
 
@@ -86,6 +133,10 @@ function handleCommand(msg){
                 return switchUser(msg, game, arg);
             case 'delete':
                 return deleteGame(msg, game, arg);
+            case 'delay':
+                return delayTurn(msg, game, arg);
+            case 'start':
+                return startGame(msg, game, arg);
             default: 
                 return -1;
         }
