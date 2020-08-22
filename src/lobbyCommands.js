@@ -52,7 +52,7 @@ function deleteChannel(guild, name, reason){
     channel.delete(reason);
 }
 
-function createNewGame(msg){
+function createNewGame(msg, era){
     let gameName = util.generateName();
     console.info(`Creating ${gameName}`);
 
@@ -60,6 +60,9 @@ function createNewGame(msg){
     createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
         console.info(`Creating game`);
         let game = domGame.create(channel, gameName, msg.client);
+
+        if(era) game.settings.setup.era = era;
+
         createChannel(msg.channel.guild, `${gameName}-lobby`, `Created by request of ${msg.author.username}`, (c) => {
             game.discord.gameLobbyChannelId = c.id;
             game.save();
@@ -102,19 +105,10 @@ function handleCommand(msg){
     const arg = split >= input.length ? '' : input.substring(split + 1);
     switch (command) {
         case 'host':
-            createNewGame(msg);
+            createNewGame(msg, arg);
             break;
         case 'delete':
             deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
-            break;
-        case 'ping':
-            msg.channel.send('ping <@&699768621496533102>').then(sent => {
-                if(pingMsgs[sent.channel.id]){
-                    pingMsgs[sent.channel.id].delete();
-                }
-                pingMsgs[sent.channel.id] = sent;
-            })
-
             break;
         case 'roles':
             msg.guild.roles.fetch()

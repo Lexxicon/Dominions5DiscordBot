@@ -84,27 +84,35 @@ function deleteGame(msg, game, arg) {
         return -1;
     }
     
+    domGame.deleteGame(game);
 }
 
 function startGame(msg, game, arg) {
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
         return -1;
     }
-    let playerCount = keys(game.discord.players).length;
+    let playerCount = game.playerCount;
     let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
 
     let provinces = playerCount * provPerPlayer;
-
-    game.settings.setup.victoryPoints =  Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
-    game.settings.setup.thrones[0] = Math.ceil(game.settings.setup.victoryPoints * 0.60);
-    game.settings.setup.thrones[1] = Math.ceil(game.settings.setup.victoryPoints * 0.35);
-    game.settings.setup.thrones[2] = Math.ceil(game.settings.setup.victoryPoints * 0.15);
-
+    console.info("provinces " + provinces);
+    let VP =  Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
+    game.settings.setup.victoryPoints = VP;
+    console.info("VP " + VP)
+    game.settings.setup.thrones = [];
+    game.settings.setup.thrones[0] = Math.ceil(VP * 0.60);
+    game.settings.setup.thrones[1] = Math.ceil(VP * 0.35);
+    game.settings.setup.thrones[2] = Math.ceil(VP * 0.15);
+    console.info(game.settings.setup.thrones);
     domGame.saveGame(game);
+    console.info("Killing")
     domGame.stopGame(game);
-    domGame.hostGame(game);
-
-    util.domcmd.startGame({name: game.name});
+    //wait 2 seconds for game to close
+    setTimeout(() => {
+        console.info("Spawning")
+        domGame.hostGame(game);
+        util.domcmd.startGame({name: game.name});
+    }, 2000);
 
     return 0;
 }

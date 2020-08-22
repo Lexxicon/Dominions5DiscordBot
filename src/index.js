@@ -49,10 +49,13 @@ bot.on('ready', () => {
 bot.on('message', msg => {
     if( msg.content.startsWith('!')){
         let handler = null;
-
-        if (msg.channel.name === LOBBY_NAME) {
+        console.log(msg.channel.name);
+        console.log(LOBBY_NAME);
+        if (msg.channel.name == LOBBY_NAME) {
+            console.info("Handling lobby command");
             handler = lobbyCommandHandler;
         }else{
+            console.info("Handling game command");
             handler = gameCommandHandler;
         }
         let result = 0;

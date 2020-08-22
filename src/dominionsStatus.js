@@ -10,6 +10,7 @@ const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
 const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYER_STATUS>\d)\t(?<AI_DIFFICULTY>\d)\t(?<TURN_STATE>\d)\t(?<STRING_ID>\w*)\t(?<NAME>[^\t]*)\t(?<TITLE>[^\t]*)/;
 
+const staleNotifcations = {};
 
 function parseLines(lines){
     const gameState = {
@@ -29,7 +30,7 @@ function parseLines(lines){
                 playerStatus: CONSTANTS.PLAYER_STATUS[groups.PLAYER_STATUS],
                 name: groups.NAME,
                 title: groups.TITLE,
-                turnState: Number(CONSTANTS.TURN_STATE[groups.TURN_STATE]),
+                turnState: CONSTANTS.TURN_STATE[groups.TURN_STATE],
             });
         }else if(STATUS_REGEX.test(line)){
             gameState.name = line.match(STATUS_REGEX).groups.GAME_NAME;
@@ -55,6 +56,8 @@ function createEmbeddedGameState(game, gameState){
     let activePlayers = [];
     let activeState = [];
 
+    let activePlayerCount = 0;
+
     const addRecord = (s) => {
         if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
             return;
@@ -64,9 +67,13 @@ function createEmbeddedGameState(game, gameState){
         let playerName;
         if(s.aiDifficulty > 0){
             playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
+            activePlayerCount++;
         }else{
             playerName = game.getDisplayName(s.nationId);
             if(playerName == '-'){
+                if(s.playerStatus.id != 0){
+                    activePlayerCount++;
+                }
                 playerName = s.playerStatus.display;
             }
         }
@@ -88,6 +95,7 @@ function createEmbeddedGameState(game, gameState){
     }else{
         _.forEach(gameState.playerStatus, addRecord);
     }
+    game.playerCount = activePlayerCount;
     fields.push({
         name: 'Empire',
         value: _.join(activeNames, "\n"),
@@ -152,7 +160,7 @@ function bindUpdateGameStatus(msg, filePath, game){
                 }
                 domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
                     (m) => {
-                        domGame.saveGame(game)
+                        domGame.saveGame(game);
                     });
             }
             msg.edit(createEmbeddedGameState(game, currentTurnState));

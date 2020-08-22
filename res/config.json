@@ -1,6 +1,6 @@
 {
     "GAMES_CATEGORY_NAME":"Dominions 5",
-    "LOBBY_NAME":"bot-testing-grounds",
+    "LOBBY_NAME":"lobby",
     "DOMINION_MAPS_PATH":"/home/steam/.dominions5/maps/",
     "DOMINION_MODS_PATH":"/home/steam/.dominions5/mods/",
     "DOMINION_SAVE_PATH":"/home/steam/.dominions5/savedgames/",

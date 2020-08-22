@@ -24,6 +24,8 @@ process.on('cleanup',killGames);
 function create(channel, name, bot){
     const game = {
         name: name,
+        playerCount: 0,
+        playerStatus: [],
         state: {
             turn: -1,
             nextTurnStartTime: 0,
@@ -89,7 +91,24 @@ function pingPlayers(game, msg, cb){
     }
 }
 
+function pingStalePlayers(game, msg, cb){
+    game.getChannel(channel => { 
+        //ping players who are stale
+    });
+}
+
 function hostGame(game){
+    if(!game.settings.server.port){
+        let port = _.findKey(ports, p => p === null);
+        if(port){
+            console.info(`Assigned port: ${port} to game: ${game.name}`);
+            game.settings.server.port = port;
+            game.save();
+        }else{
+            throw `Failed to host! No available ports! Game: ${game.name}`;
+        }
+    }
+
     if(ports[game.settings.server.port] !== null){
         if(ports[game.settings.server.port] === game){
             console.warn(`Game seems already hosted. Game: ${game.name}, Port: ${game.settings.server.port}`);
@@ -97,16 +116,6 @@ function hostGame(game){
             throw `A game is already hosted on port! Other Game: ${ports[game.settings.server.port].name}, Port: ${game.settings.server.port}`;
         }else{
             throw `Port is not available! Port: ${game.settings.server.port}`;
-        }
-    }
-
-    if(!game.settings.server.port){
-        let port = _.findKey(ports, p => p === null);
-        if(port){
-            game.settings.server.port = port;
-            game.save();
-        }else{
-            throw `Failed to host! No available ports! Game: ${game.name}`;
         }
     }
 
@@ -144,28 +153,31 @@ function unloadGame(game){
 }
 
 function deleteGame(game) {
-    unloadGame();
-    game.getGuild(guild => {
-        if(game.discord.playerRoleId){
-            guild.roles.fetch(game.discord.playerRoleId)
-                .then(r => r.delete())
-                .catch(console.error);
-        }
+    unloadGame(game);
+    //wait 2 seconds for the game to stop
+    setTimeout(() => {
+        game.getGuild(guild => {
+            if(game.discord.playerRoleId){
+                guild.roles.fetch(game.discord.playerRoleId)
+                    .then(r => r.delete())
+                    .catch(console.error);
+            }
 
-        if(game.discord.channelId){
-            guild.client.channels.fetch(game.discord.channelId)
-                .then(c => c.delete())
-                .catch(console.error);
-        }
+            if(game.discord.channelId){
+                guild.client.channels.fetch(game.discord.channelId)
+                    .then(c => c.delete())
+                    .catch(console.error);
+            }
 
-        if(game.discord.gameLobbyChannelId){
-            guild.client.channels.fetch(game.discord.gameLobbyChannelId)
-                .then(c => c.delete())
-                .catch(console.error);
-        }
-    });
-    fs.rmdir(`${config.DOMINION_SAVE_PATH}${game.name}`, {recursive: true});
-    fs.unlink(`${config.BOT_SAVE_PATH}${game.name}.json`);
+            if(game.discord.gameLobbyChannelId){
+                guild.client.channels.fetch(game.discord.gameLobbyChannelId)
+                    .then(c => c.delete())
+                    .catch(console.error);
+            }
+        });
+        util.deleteGameSave(game);
+        util.deleteJSON(game.name);
+    }, 2000);
 }
 
 function loadGame(name, bot, cb){
@@ -199,8 +211,8 @@ function wrapGame(game, bot){
     let guild = null;
     game.getGuild = (cb) => {
         if(guild === null){
-            guild = bot.guilds.resolve(game.getChannel).then(c => {
-                guild = c;
+            game.getChannel(ch => {
+                guild = ch.guild;
                 cb(guild);
             });
         }else{
@@ -302,8 +314,10 @@ module.exports = {
     create,
     getLaunchArgs,
     loadGame,
+    stopGame,
     saveGame,
     hostGame,
     pingPlayers,
+    deleteGame,
     getGames
 };

@@ -55,6 +55,15 @@ function loadJSON(name, cb){
     });
 }
 
+function deleteJSON(name) {
+    fs.unlink(`${config.BOT_SAVE_PATH}${name}.json`, (err) => console.error(err));
+}
+
+function deleteGameSave(game) {
+    const path = config.DOMINION_SAVE_PATH + game.name;
+    fs.rmdir(path, {recursive: true}, (err) => console.error(err));
+}
+
 function loadAllGames(cb){
     fs.readdir(config.BOT_SAVE_PATH, (e, items)=>{
         if(e) {
@@ -101,6 +110,8 @@ module.exports = {
     emoji,
     saveJSON,
     loadJSON,
+    deleteJSON,
+    deleteGameSave,
     generateName,
     loadAllGames,
     getSeconds
