@@ -54,7 +54,8 @@ function create(channel, name, bot){
                 },
                 thrones: [5, 3, 2],
                 victoryPoints: 8,
-                cataclysm: 72
+                cataclysm: 72,
+                mods: []
             }
         },
         discord: {
@@ -196,6 +197,11 @@ function wrapGame(game, bot){
     if(game.state.nextTurnStartTime){
         game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime);
     }
+
+    if(!game.settings.setup.mods){
+        game.settings.setup.mods = [];
+    }
+
     let channel = null;
     game.getChannel = (cb) => {
         if(channel === null){
@@ -296,6 +302,11 @@ function getLaunchArgs(config){
     }else{
         args.push("--mapfile");
         args.push(setup.map);
+    }
+    if(setup.mods && setup.mods.length > 0){
+        setup.mods.forEach(mod => args.push("--enablemod", mod));
+    }else{
+        args.push("--nomods");
     }
     args = args.concat(CONSTANTS.ERA[setup.era]);
     args = args.concat(CONSTANTS.EVENTS[setup.eventRarity]);

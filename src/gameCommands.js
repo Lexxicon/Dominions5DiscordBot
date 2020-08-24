@@ -6,6 +6,7 @@ const util = require('./util.js');
 const status = require('./dominionsStatus.js');
 const domGame = require('./dominionsGame.js');
 const constants = require('./constants.js');
+const { split } = require("lodash");
 
 function joinUser(msg, game, nationID){
     let roleID = game.discord.playerRoleId;
@@ -117,6 +118,57 @@ function startGame(msg, game, arg) {
     return 0;
 }
 
+function restartGame(msg, game, arg){
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return -1;
+    }
+    console.info("Killing")
+    domGame.stopGame(game);
+    //wait 2 seconds for game to close
+    setTimeout(() => {
+        console.info("Spawning")
+        domGame.hostGame(game);
+    }, 2000);
+}
+
+function changeGameSettings(msg, game, arg){
+    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+        return -1;
+    }
+
+    let args = arg ? arg.split(' ') : [];
+    if(args.length > 0){
+        switch(args[0]) {
+            case 'listMods':
+                util.getAvailableMods(f => console.info(f));
+            return 0;
+
+            case 'addMod':
+                if(game.state.turn != -1){
+                    return -1;
+                }
+                util.getAvailableMods(f => {
+                    if( f == args[1])  {
+                        console.log("added mod!")
+                        game.settings.setup.mods.push(args[1]);
+                        domGame.saveGame(game);
+                    }
+                });
+            return 0;
+
+            case 'listAddedMods':
+                game.settings.setup.mods.forEach(element => {
+                    console.log(element);
+                });
+            return 0;
+
+            default: 
+                return -1;
+        }
+    }
+
+}
+
 function handleCommand(msg){
     const input = msg.content.substring(1);
 
@@ -136,6 +188,7 @@ function handleCommand(msg){
 
         switch(command){
             case 'join':
+            case 'claim':
                 return joinUser(msg, game, arg);
             case 'switch':
                 return switchUser(msg, game, arg);
@@ -145,6 +198,13 @@ function handleCommand(msg){
                 return delayTurn(msg, game, arg);
             case 'start':
                 return startGame(msg, game, arg);
+            case 'config':
+                return changeGameSettings(msg, game, arg);
+            case 'stales':
+                util.getStaleNations(game, (nation) => console.log(nation));
+                return 0;
+            case 'restartGame':
+                return restartGame(msg, game, arg);
             default: 
                 return -1;
         }

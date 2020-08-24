@@ -49,7 +49,6 @@ function loadJSON(name, cb){
         if(err) cb(data, err);
         else {
             let json = JSON.parse(data);
-            console.info(`loaded ${json} from ${data}`);
             cb(json);
         }
     });
@@ -80,7 +79,7 @@ function randomValue(array){
 function generateName(){
     for(let i = 0; i < 30; i++){
         let name = randomValue(config.GAME_NAME_PREFIX)+'-'+randomValue(config.GAME_NAME_SUFFIX);
-        if(!fs.existsSync(`${config.DOMINION_MODS_PATH}${name}`)){
+        if(!fs.existsSync(`${config.DOMINION_SAVE_PATH}${name}`)){
             return name;
         }
     }
@@ -96,7 +95,53 @@ function getSeconds(str) {
     if (hours) { seconds += parseInt(hours[1])*3600; }
     if (minutes) { seconds += parseInt(minutes[1])*60; }
     return seconds;
-  }
+}
+
+function getAvailableMods(cb){
+    return fs.readdir(`${config.DOMINION_MODS_PATH}`, (err, files) => files.forEach(f => {
+        if(f.endsWith(".dm")) cb(f);
+    }));
+}
+
+function getStaleNations(game, cb) {
+    let stales = [];
+    let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
+    console.log(staleThreshold);
+
+    if(staleThreshold > 0){
+        let staleTime = new Date(game.state.nextTurnStartTime);
+        staleTime.addHours(-staleThreshold);
+        console.log(staleTime);
+
+        fs.readdir(`${config.DOMINION_SAVE_PATH}${game.name}`, (err, files) => {
+            console.log(files);
+            if(files.length == 0){
+                cb(stales);
+                return;
+            }
+            let count = files.length;
+            files.forEach(file => {
+                if(file.endsWith('.2h')){
+                    fs.stat(`${config.DOMINION_SAVE_PATH}${game.name}/${file}`, (stat) => {
+                        console.log(stat);
+                        if(stat && stat.ctime < staleTime){
+                            stales.push(file.substr(0, file.indexOf('.2h')));
+                        }
+                        count--;
+                        if(count == 0){
+                            cb(stales);
+                        }
+                    });
+                }else{
+                    count--;
+                    if(count == 0){
+                        cb(stales);
+                    }
+                }
+            })
+        });
+    }
+}
 
 module.exports = {
     findChannel: function (guild, name) {
@@ -114,5 +159,7 @@ module.exports = {
     deleteGameSave,
     generateName,
     loadAllGames,
-    getSeconds
+    getSeconds,
+    getAvailableMods,
+    getStaleNations
 };

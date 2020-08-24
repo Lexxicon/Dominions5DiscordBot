@@ -164,6 +164,7 @@ function bindUpdateGameStatus(msg, filePath, game){
                     });
             }
             msg.edit(createEmbeddedGameState(game, currentTurnState));
+            game.currentTurnState = currentTurnState;
         });
     }
 }
