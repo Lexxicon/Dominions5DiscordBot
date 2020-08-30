@@ -1,3 +1,5 @@
+const log = require("log4js").getLogger();
+
 const fs = require("fs");
 const _ = require("lodash");
 const config = require("../res/config.json");
@@ -19,7 +21,7 @@ function domcmd (commands, game, cb = null) {
     fs.writeFile(path, commands, (err) => {
         if(err && game.discord.channel) {
             game.discord.channels.send('Error while executing dom command! Check logs for more details');
-            console.warn(`Error while executing dom command for ${game.name}! \n\n ${err}`);
+            log.warn(`Error while executing dom command for ${game.name}! \n\n ${err}`);
         }
 
         if(cb){
@@ -38,29 +40,41 @@ function emoji(input){
 function saveJSON(name, data){
     fs.writeFile(`${config.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data), err => {
         if(err) throw err;
-        console.log(`Saved ${name}`);
+        log.info(`Saved ${name}`);
     });
 }
 
 function loadJSON(name, cb){
     name = name.endsWith('.json') ? name : `${name}.json`;
-    console.info(`loading ${name}`);
+    log.info(`loading ${name}`);
     fs.readFile(`${config.BOT_SAVE_PATH}${name}`, (err, data) => {
         if(err) cb(data, err);
         else {
-            let json = JSON.parse(data);
-            cb(json);
+            try{
+                let json = JSON.parse(data);
+                cb(json);
+            } catch (e) {
+                if (e instanceof SyntaxError) {
+                    printError(e, true);
+                } else {
+                    printError(e, false);
+                }
+            }
         }
     });
 }
 
+function printError (error, explicit) {
+    log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}`);
+}
+
 function deleteJSON(name) {
-    fs.unlink(`${config.BOT_SAVE_PATH}${name}.json`, (err) => console.error(err));
+    fs.unlink(`${config.BOT_SAVE_PATH}${name}.json`, (err) => log.error(err));
 }
 
 function deleteGameSave(game) {
     const path = config.DOMINION_SAVE_PATH + game.name;
-    fs.rmdir(path, {recursive: true}, (err) => console.error(err));
+    fs.rmdir(path, {recursive: true}, (err) => {if(err) { log.error(err)}});
 }
 
 function loadAllGames(cb){
@@ -68,7 +82,7 @@ function loadAllGames(cb){
         if(e) {
             throw e;
         }
-        items.forEach(cb);
+        items.filter(v => v.endsWith('.json')).forEach(cb);
     });
 }
 
@@ -98,44 +112,44 @@ function getSeconds(str) {
 }
 
 function getAvailableMods(cb){
-    return fs.readdir(`${config.DOMINION_MODS_PATH}`, (err, files) => files.forEach(f => {
-        if(f.endsWith(".dm")) cb(f);
-    }));
+    return fs.readdir(`${config.DOMINION_MODS_PATH}`, 
+    (err, files) => cb(files.filter(f => f.endsWith(".dm"))));
 }
 
 function getStaleNations(game, cb) {
     let stales = [];
     let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
-    console.log(staleThreshold);
 
     if(staleThreshold > 0){
         let staleTime = new Date(game.state.nextTurnStartTime);
+        if(staleTime.getSecondsFromNow() < 0){
+            log.debug(`Game hasn't started yet ${game.name}`)
+            cb(null, []);
+        }
         staleTime.addHours(-staleThreshold);
-        console.log(staleTime);
+        staleTime.addHours(-game.settings.turns.maxTurnTime);
 
         fs.readdir(`${config.DOMINION_SAVE_PATH}${game.name}`, (err, files) => {
-            console.log(files);
             if(files.length == 0){
-                cb(stales);
+                cb(err, stales);
                 return;
             }
             let count = files.length;
             files.forEach(file => {
                 if(file.endsWith('.2h')){
-                    fs.stat(`${config.DOMINION_SAVE_PATH}${game.name}/${file}`, (stat) => {
-                        console.log(stat);
+                    fs.stat(`${config.DOMINION_SAVE_PATH}${game.name}/${file}`, (err, stat) => {
                         if(stat && stat.ctime < staleTime){
                             stales.push(file.substr(0, file.indexOf('.2h')));
                         }
                         count--;
                         if(count == 0){
-                            cb(stales);
+                            cb(err, stales);
                         }
                     });
                 }else{
                     count--;
                     if(count == 0){
-                        cb(stales);
+                        cb(err, stales);
                     }
                 }
             })

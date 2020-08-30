@@ -1,10 +1,15 @@
+const log = require("log4js").getLogger();
 
 const _ = require("lodash");
+const EventEmitter = require('events');
 const fs = require("fs");
+
+const spawn = require('child_process').spawn;
+
 const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
-const spawn = require('child_process').spawn;
+const { getLogger } = require("log4js");
 
 const ports = {};
 _.forEach(config.PORTS, p => ports[p] = null);
@@ -29,6 +34,7 @@ function create(channel, name, bot){
         state: {
             turn: -1,
             nextTurnStartTime: 0,
+            notifiedBlockers: false
         },
         settings: {
             server: {
@@ -69,7 +75,7 @@ function create(channel, name, bot){
             }
         }
     };
-    console.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
+    log.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
     return wrapGame(game, bot);
 }
 
@@ -92,17 +98,80 @@ function pingPlayers(game, msg, cb){
     }
 }
 
-function pingStalePlayers(game, msg, cb){
-    game.getChannel(channel => { 
-        //ping players who are stale
+function getBlockingNations(game, staleNations){
+    if(!staleNations) staleNations = [];
+
+    let blockingNations = [];
+    for(player of game.playerStatus){
+        if(player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)){
+            blockingNations.push(player.nationID);
+        }
+    }
+    if(blockingNations.length == 0) {
+        log.info(`No blocking players for ${game.name}`);
+        return [];
+    }
+    blockingNations.sort((a, b) => a - b);
+    return blockingNations;
+}
+
+function pingBlockingPlayers(game, cb) {
+    game.getGameLobby(channel => { 
+        util.getStaleNations(game, (err, staleNations) => {
+            if(game.state.notifiedBlockers){
+                log.info(`Already notified ${game.name}`);
+                return;
+            }
+            let blockingNations = getBlockingNations(game, staleNations);
+
+            if(blockingNations.length == 0) {
+                log.info(`No blocking players for ${game.name}`);
+                return;
+            }
+
+            let playerIDs = blockingNations.map(game.getPlayerForNation);
+            let ping = playerIDs.map(id => `<@&${id}>`).join(' ');
+
+            let hoursTillHost = Math.floor( (game.state.nextTurnStartTime.getSecondsFromNow() / 60 ) / 60);
+
+            game.state.notifiedBlockers = true;
+            channel.send(`${ping}\nNext turn starts in ${hoursTillHost} hours!`);
+            DocumentFragment.saveGame(game);
+        });
+    });
+}
+
+function handleStreamLines(outStream, handler){
+    const emitter = new EventEmitter();
+
+    let buffer = "";
+    let lastEmit = null;
+
+    outStream
+        .on('data', data => {
+            buffer += data;
+            let lines = buffer.split(/[\r\n|\n]/);
+            buffer = lines.pop();
+            lines.forEach(line => emitter.emit('line', line));
+        })
+        .on('end', () => {
+            if (buffer.length > 0) emitter.emit('line', buffer);
+        });
+    
+    emitter.on('line', data => {
+        if(data != lastEmit){
+            lastEmit = data;
+            handler(data);
+        }
     });
 }
 
 function hostGame(game){
+    log.info(`hosting: ${game.name}`);
     if(!game.settings.server.port){
         let port = _.findKey(ports, p => p === null);
         if(port){
-            console.info(`Assigned port: ${port} to game: ${game.name}`);
+            log.info(`Assigned port: ${port} to game: ${game.name}`);
             game.settings.server.port = port;
             game.save();
         }else{
@@ -112,7 +181,7 @@ function hostGame(game){
 
     if(ports[game.settings.server.port] !== null){
         if(ports[game.settings.server.port] === game){
-            console.warn(`Game seems already hosted. Game: ${game.name}, Port: ${game.settings.server.port}`);
+            log.warn(`Game seems already hosted. Game: ${game.name}, Port: ${game.settings.server.port}`);
         }else if(ports[game.settings.server.port]){
             throw `A game is already hosted on port! Other Game: ${ports[game.settings.server.port].name}, Port: ${game.settings.server.port}`;
         }else{
@@ -121,9 +190,15 @@ function hostGame(game){
     }
 
     const args = getLaunchArgs(game);
-    console.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
-    const process = spawn(config.DOMINION_EXEC_PATH, args, {stdio: 'inherit'});
+    log.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
+    const process = spawn(config.DOMINION_EXEC_PATH, args);
 
+    process.stdout.setEncoding('utf-8');
+    handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
+
+    process.stderr.setEncoding('utf-8');
+    handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
+    
     ports[game.settings.server.port] = game;
 
     process.on('close', (code, sig) => {
@@ -137,6 +212,7 @@ function hostGame(game){
 }
 
 function stopGame(game){
+    log.info(`stopping ${game.name}`)
     if(game.getProcess){
         game.getProcess().kill();
         delete game.getProcess;
@@ -147,6 +223,7 @@ function stopGame(game){
 }
 
 function unloadGame(game){
+    log.info(`unloading: ${game.name}`);
     stopGame(game);
     if(games[game.name] === game){
         delete games[game.name];
@@ -154,6 +231,7 @@ function unloadGame(game){
 }
 
 function deleteGame(game) {
+    log.info(`Deleting ${game.name}`);
     unloadGame(game);
     //wait 2 seconds for the game to stop
     setTimeout(() => {
@@ -161,19 +239,19 @@ function deleteGame(game) {
             if(game.discord.playerRoleId){
                 guild.roles.fetch(game.discord.playerRoleId)
                     .then(r => r.delete())
-                    .catch(console.error);
+                    .catch(log.error);
             }
 
             if(game.discord.channelId){
                 guild.client.channels.fetch(game.discord.channelId)
                     .then(c => c.delete())
-                    .catch(console.error);
+                    .catch(log.error);
             }
 
             if(game.discord.gameLobbyChannelId){
                 guild.client.channels.fetch(game.discord.gameLobbyChannelId)
                     .then(c => c.delete())
-                    .catch(console.error);
+                    .catch(log.error);
             }
         });
         util.deleteGameSave(game);
@@ -183,7 +261,7 @@ function deleteGame(game) {
 
 function loadGame(name, bot, cb){
     util.loadJSON(name, (data, err) => {
-        console.info('Wrapping game');
+        log.info('Wrapping game');
         if(err) throw `Error ${err}`;
         cb(wrapGame(data, bot));
     });
@@ -211,6 +289,18 @@ function wrapGame(game, bot){
             });
         }else{
             cb(channel);
+        }
+    }
+
+    let gameLobby = null;
+    game.getGameLobby = (cb) => {
+        if(gameLobby === null){
+           bot.channels.fetch(game.discord.gameLobbyChannelId, true).then(c => {
+            gameLobby = c;
+                cb(c);
+            });
+        }else{
+            cb(gameLobby);
         }
     }
 
@@ -329,6 +419,8 @@ module.exports = {
     saveGame,
     hostGame,
     pingPlayers,
+    pingBlockingPlayers,
+    getBlockingNations,
     deleteGame,
     getGames
 };

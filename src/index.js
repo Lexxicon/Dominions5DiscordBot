@@ -1,5 +1,9 @@
-require('./prototypes.js');
 require('dotenv').config();
+
+const logging = require('./logger.js');
+const log = require("log4js").getLogger();
+
+require('./prototypes.js');
 
 const _ = require("lodash");
 const Discord = require('discord.js');
@@ -19,7 +23,8 @@ const GAMES_CATEGORY_NAME = process.env.GAMES_CATEGORY_NAME;
 const LOBBY_NAME = config.LOBBY_NAME;
 
 function cleanup(){
-    console.info('Goodbye');
+    logging.shutdown();
+    log.info('Goodbye');
 }
 
 process.on('cleanup',cleanup);
@@ -31,31 +36,31 @@ process.on('exit', function () {
 
 // catch ctrl+c event and exit normally
 process.on('SIGINT', function () {
-  console.log('Ctrl-C...');
+    log.info('Ctrl-C...');
   process.exit(2);
 });
 
 //catch uncaught exceptions, trace, then exit normally
 process.on('uncaughtException', function(e) {
-  console.log(`Uncaught Exception... ${e} ${e.name}`);
-  console.log(e.stack);
+    log.info(`Uncaught Exception... ${e} ${e.name}`);
+    log.info(e.stack);
   process.exit(99);
 });
 
 bot.on('ready', () => {
-    console.info(`Logged in as ${bot.user.tag}!`);
+    log.info(`Logged in as ${bot.user.tag}!`);
 });
 
 bot.on('message', msg => {
     if( msg.content.startsWith('!')){
         let handler = null;
-        console.log(msg.channel.name);
-        console.log(LOBBY_NAME);
+        log.info(msg.channel.name);
+        log.info(LOBBY_NAME);
         if (msg.channel.name == LOBBY_NAME) {
-            console.info("Handling lobby command");
+            log.info("Handling lobby command");
             handler = lobbyCommandHandler;
         }else{
-            console.info("Handling game command");
+            log.info("Handling game command");
             handler = gameCommandHandler;
         }
         let result = 0;
@@ -71,24 +76,24 @@ bot.on('message', msg => {
         }).catch( err => {
             msg.reactions.removeAll();
             msg.react(util.emoji(':no_entry_sign:'))
-            console.error(err);
+            log.error(err);
         });
     }
 });
 
 bot.login(TOKEN).then(s => {
     util.loadAllGames(f => {
-        console.info(`Restoring ${f}`)
+        log.info(`Restoring ${f}`)
         domGame.loadGame(f, bot, game => {
             domGame.hostGame(game);
             dominionsStatus.startWatches(game);
             if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
-                console.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
+                log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
                 util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
             }
         });
     });
 }).catch(err => {
-    console.error(err);
+    log.error(err);
     throw err;
 });

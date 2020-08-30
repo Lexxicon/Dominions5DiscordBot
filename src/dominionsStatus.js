@@ -1,3 +1,5 @@
+const log = require("log4js").getLogger();
+
 const Discord = require('discord.js');
 const fs = require('fs');
 const _ = require('lodash');
@@ -5,12 +7,13 @@ const _ = require('lodash');
 const config = require('../res/config.json');
 const CONSTANTS = require('./constants.js');
 const domGame = require('./dominionsGame.js');
+const util = require('./util.js');
 
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
 const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYER_STATUS>\d)\t(?<AI_DIFFICULTY>\d)\t(?<TURN_STATE>\d)\t(?<STRING_ID>\w*)\t(?<NAME>[^\t]*)\t(?<TITLE>[^\t]*)/;
 
-const staleNotifcations = {};
+const blockingNotifications = {};
 
 function parseLines(lines){
     const gameState = {
@@ -50,11 +53,16 @@ function parseLines(lines){
     return gameState;
 }
 
-function createEmbeddedGameState(game, gameState){
+function createEmbeddedGameState(game, gameState, staleNations){
     const fields = [];
     let activeNames = [];
     let activePlayers = [];
     let activeState = [];
+    let staleMap = {};
+
+    for(nation of staleNations){
+        staleMap[nation] = nation;
+    }
 
     let activePlayerCount = 0;
 
@@ -65,6 +73,7 @@ function createEmbeddedGameState(game, gameState){
         activeNames.push(`[${s.nationId}] ${s.name}`);
 
         let playerName;
+
         if(s.aiDifficulty > 0){
             playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
             activePlayerCount++;
@@ -82,10 +91,28 @@ function createEmbeddedGameState(game, gameState){
         }
         activePlayers.push(playerName);
 
-        if(s.playerStatus.id == 1){
-            activeState.push(s.turnState.display);
-        }else{
-            activeState.push('-');
+        if(s.turnState.id == 9){
+            let uploaded = s.playerStatus.id != 0;
+            let claimed = game.getPlayerForNation(s.nationId) != null;
+            if(uploaded && claimed){
+                activeState.push('Ready');
+            }else if(claimed && !uploaded) {
+                activeState.push('Upload Pretender');
+            }else if(!claimed && uploaded) {
+                activeState.push('Missing Claim');
+            }else{
+                activeState.push('-');
+            }
+        }else {
+            if(s.playerStatus.id == 1){
+                if(staleMap[s.stringId] && s.turnStateMessageId.id == 0){
+                    activeState.push("Stale");
+                }else{
+                    activeState.push(s.turnState.display);
+                }
+            }else{
+                activeState.push('-');
+            }
         }
     }
 
@@ -120,9 +147,16 @@ function createEmbeddedGameState(game, gameState){
     if(gameState.turnState.turn < 0){
         desc.push("Lobby");
     } else{
-        desc.push(`Turn: ${gameState.turnState.turn}`);
+        if(gameState.turnState.turnLimit){
+            desc.push(`Turn: ${gameState.turnState.turn}/${gameState.turnState.turnLimit}`);
+        }else{
+            desc.push(`Turn: ${gameState.turnState.turn}`);
+        }
         if(game.state.nextTurnStartTime){
             desc.push(`Auto Host at: ${game.state.nextTurnStartTime}`);
+
+            let hoursTillHost = Math.floor( (game.state.nextTurnStartTime.getSecondsFromNow() / 60 ) / 60);           
+            desc.push(`Next turn starts in ${hoursTillHost} hours!`);
         }
     }
 
@@ -138,10 +172,10 @@ function createEmbeddedGameState(game, gameState){
 }
 
 function read(path, cb){
-    console.log('reading ' + path)
+    log.info('reading ' + path)
     fs.readFile(path, 'utf8', (err, data) => {
         if(err){
-            console.warn(err);
+            log.warn(err);
         }else{
             cb(data.split('\n'));
         } 
@@ -150,27 +184,50 @@ function read(path, cb){
 
 function bindUpdateGameStatus(msg, filePath, game){
     return () => {
-        console.info(`updating ${game.name}`);
+        log.info(`updating ${game.name}`);
         read(filePath, (lines) => {
-            let currentTurnState = parseLines(lines);
-            if(game.state.turn != currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
-                game.state.turn = currentTurnState.turnState.turn;
-                if(game.settings.turns.maxTurnTime){
-                    game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
+            util.getStaleNations(game, (err, staleNations) => {
+                let currentTurnState = parseLines(lines);
+                if(game.state.turn != currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
+                    if(blockingNotifications[game.name]){
+                        clearTimeout(blockingNotifications[game.name]);
+                        delete blockingNotifications[game.name];
+                    }
+                    
+                    game.state.turn = currentTurnState.turnState.turn;
+                    game.state.notifiedBlockers = false;
+                    if(game.settings.turns.maxTurnTime){
+                        game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
+                    }
+                    domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
+                        (m) => {
+                            domGame.saveGame(game);
+                        });
                 }
-                domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
-                    (m) => {
-                        domGame.saveGame(game);
-                    });
-            }
-            msg.edit(createEmbeddedGameState(game, currentTurnState));
-            game.currentTurnState = currentTurnState;
+                msg.edit(createEmbeddedGameState(game, currentTurnState, staleNations));
+                game.playerStatus = currentTurnState.playerStatus;
+                domGame.saveGame(game);
+
+                if(!blockingNotifications[game.name]){
+                    let blockPingTime = new Date(game.state.nextTurnStartTime);
+                    blockPingTime.addHours(-12);
+                    let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
+                    if(timeTillPing > 0){
+                        blockingNotifications[game.name] = setTimeout(domGame.pingBlockingPlayers(game), timeTillPing);
+                    }
+                }
+
+                if(staleNations && staleNations.length > 0 && getBlockingNations(game, staleNations).length == 0 ){
+                    log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
+                    util.domcmd.startGame(game);
+                }
+            })
         });
     }
 }
 
 function watchStatusFile(filePath, game){
-    console.info(`Setting up watch for ${game.name}`);
+    log.info(`Setting up watch for ${game.name}`);
     game.getChannel(c => {
         c.messages.fetch(game.discord.turnStateMessageId)
             .then( msg =>{
@@ -183,16 +240,26 @@ function watchStatusFile(filePath, game){
 }
 
 function startWatches(game) {
+    log.info(`Starting watches on ${game.name}`)
     const filePath = `${config.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
+
         read(filePath, (lines) => {
-            const embeddedMessage = createEmbeddedGameState(game, parseLines(lines));
-            game.getChannel(c => {
-                c.send(embeddedMessage).then(msg => {
-                    game.discord.turnStateMessageId = msg.id;
-                    domGame.saveGame(game);
-                    watchStatusFile(filePath, game);
+            util.getStaleNations(game, (err, staleNations) => {
+                const embeddedMessage = createEmbeddedGameState(game, parseLines(lines), staleNations);
+                game.getChannel(c => {
+                    if(!game.discord.turnStateMessageId){
+                        game.discord.turnStateMessageId = -1;
+                        c.send(embeddedMessage)
+                            .then(msg => {
+                                msg.pin();
+                                game.discord.turnStateMessageId = msg.id;
+                                domGame.saveGame(game);
+                                watchStatusFile(filePath, game);
+                            });
+                    }
                 });
+                
             });
         });
     }else{

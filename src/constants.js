@@ -85,18 +85,22 @@ module.exports = {
     },
     TURN_STATE: {
         "0": {
+            id: 0,
             ready: false,
             display: "Waiting"
         },
         "1": {
+            id: 1,
             ready: false,
             display: "Waiting (Partial)"
         },
         "2": {
+            id: 2,
             ready: true,
             display: "Done"
         },
         "9": { //lobby?
+            id: 9,
             ready: false,
             display: "-"
         }

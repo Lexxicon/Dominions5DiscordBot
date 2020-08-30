@@ -1,3 +1,5 @@
+const log = require("log4js").getLogger();
+
 const config = require("../res/config.json");
 const util = require('./util.js');
 const status = require('./dominionsStatus.js');
@@ -8,14 +10,14 @@ const LOBBY_NAME = config.LOBBY_NAME.toLowerCase();
 
 function createChannel(guild, name, reason, cb){
     name = name.toLowerCase();
-    console.info('create ' + name);
+    log.info('create ' + name);
     if (name === LOBBY_NAME) {
-        console.warn('Can\'t create the lobby!');
+        log.warn('Can\'t create the lobby!');
         return;
     }
 
     if(util.findChannel(guild, name)){
-        console.warn('Channel already exists!');
+        log.warn('Channel already exists!');
         return;
     }
 
@@ -30,35 +32,35 @@ function createChannel(guild, name, reason, cb){
 function deleteChannel(guild, name, reason){
     name = name.toLowerCase().replace(' ', '-');
 
-    console.info('delete ' + name);
+    log.info('delete ' + name);
     if (name === LOBBY_NAME) {
-        console.warn('Can\'t delete the lobby!');
+        log.warn('Can\'t delete the lobby!');
         return;
     }
 
     let channel = util.findChannel(guild, name);
     if (!channel) {
-        console.warn(`Failed to find channel: ${name}`)
+        log.warn(`Failed to find channel: ${name}`)
         return;
     }
 
     const category = util.findChannel(guild, GAMES_CATEGORY_NAME);
     if (channel.parent !== category) {
-        console.warn(`Can\'t delete channels not in the game category! ${channel.name}`);
+        log.warn(`Can\'t delete channels not in the game category! ${channel.name}`);
         return;
     } 
     
-    console.info(`About to delete ${channel}`);
+    log.info(`About to delete ${channel}`);
     channel.delete(reason);
 }
 
 function createNewGame(msg, era){
     let gameName = util.generateName();
-    console.info(`Creating ${gameName}`);
+    log.info(`Creating ${gameName}`);
 
-    console.info(`Creating channel`);
+    log.info(`Creating channel`);
     createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
-        console.info(`Creating game`);
+        log.info(`Creating game`);
         let game = domGame.create(channel, gameName, msg.client);
 
         if(era) game.settings.setup.era = era;
@@ -75,15 +77,15 @@ function createNewGame(msg, era){
         }).then(r => {
             game.discord.playerRoleId = r.id;
         }).catch(err => {
-            console.error(err);
+            log.error(err);
             throw err;
         });
-        console.info(`Saving game`);
+        log.info(`Saving game`);
         util.saveJSON(game.name, game);
-        console.info(`Hosting game`);
+        log.info(`Hosting game`);
         domGame.hostGame(game);
         setTimeout(() => {
-            console.info(`Watching game`);
+            log.info(`Watching game`);
             status.startWatches(game);
             util.saveJSON(game.name, game);
         }, 3000);
@@ -113,12 +115,12 @@ function handleCommand(msg){
         case 'roles':
             msg.guild.roles.fetch()
                 .then(role => {
-                    console.info(role);
-                    console.log(`There are ${role.cache.size} roles.`);
+                    log.info(role);
+                    log.info(`There are ${role.cache.size} roles.`);
                 });
             break;
         default:
-            console.warn(`unsupported command! ${command}`);
+            log.warn(`unsupported command! ${command}`);
             return -1;
     }
     return 0;
