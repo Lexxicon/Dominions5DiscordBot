@@ -6,6 +6,7 @@
     "DOMINION_SAVE_PATH":"/home/steam/.dominions5/savedgames/",
     "BOT_SAVE_PATH":"/home/steam/.dominions5bot/data/",
     "BOT_ARCHIVE_PATH":"/home/steam/.dominions5bot/archive/",
+    "MAX_BACKUP": 5,
     "DOMINION_EXEC_PATH":"/home/steam/Steam/steamapps/common/Dominions5/dom5.sh",
     "PORTS": [1024, 1025, 1026, 1027],
     "HOST_URL":"lexxicon.crabdance.com",

@@ -109,13 +109,20 @@ function startGame(msg, game, arg) {
     log.info(game.settings.setup.thrones);
     domGame.saveGame(game);
     log.info("Killing")
+    let process = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
-    //wait 2 seconds for game to close
-    setTimeout(() => {
+    let start = () => {
         log.info("Spawning")
         domGame.hostGame(game);
         util.domcmd.startGame({name: game.name});
-    }, 2000);
+    };
+
+    if(!process){
+        //wait for game to close
+        setTimeout(start, 10000);
+    }else{
+        process.on('exit', start);
+    }
 
     return 0;
 }
@@ -134,13 +141,19 @@ function restartGame(msg, game, arg){
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
         return -1;
     }
-    log.info("Killing")
+    log.info("Killing");
+    let process = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
-    //wait 2 seconds for game to close
-    setTimeout(() => {
+    let host = () => {
         log.info("Spawning")
         domGame.hostGame(game);
-    }, 2000);
+    };
+    if(!process){
+        //wait for game to close
+        setTimeout(host, 10000);
+    }else{
+        process.on('exit', host);
+    }
 }
 
 function changeGameSettings(msg, game, arg){
@@ -160,7 +173,7 @@ function changeGameSettings(msg, game, arg){
                     return -1;
                 }
                 util.getAvailableMods(f => {
-                    if( f == args[1])  {
+                    if( f.includes(args[1]) && !game.settings.setup.mods.includes(args[1]))  {
                         log.info("added mod!")
                         game.settings.setup.mods.push(args[1]);
                         domGame.saveGame(game);
@@ -208,7 +221,7 @@ function changeGameSettings(msg, game, arg){
 }
 
 function resign(msg, game, arg) {
-
+    throw `can't do that Dave`;
 }
 
 function handleCommand(msg){
@@ -249,6 +262,12 @@ function handleCommand(msg){
                 return 0;
             case 'resign':
                 return
+            case 'backup':
+                if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+                    return -1;
+                }
+                util.backupGame(game.name);
+                return 0;
             case 'restartGame':
                 return restartGame(msg, game, arg);
             default: 

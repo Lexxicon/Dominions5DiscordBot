@@ -9,7 +9,6 @@ const spawn = require('child_process').spawn;
 const config = require("../res/config.json");
 const CONSTANTS = require("./constants.js");
 const util = require('./util.js');
-const { getLogger } = require("log4js");
 
 const ports = {};
 _.forEach(config.PORTS, p => ports[p] = null);
@@ -159,6 +158,7 @@ function handleStreamLines(outStream, handler){
         });
     
     emitter.on('line', data => {
+        log.debug(`${data}`);
         if(data != lastEmit){
             lastEmit = data;
             handler(data);
@@ -191,13 +191,14 @@ function hostGame(game){
 
     const args = getLaunchArgs(game);
     log.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
-    const process = spawn(config.DOMINION_EXEC_PATH, args);
+    const process = spawn(config.DOMINION_EXEC_PATH, args, {stdio: 'inherit'});
 
-    process.stdout.setEncoding('utf-8');
-    handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
+    // these don't seem to work for some reason
+    // process.stdout.setEncoding('utf-8');
+    // handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
 
-    process.stderr.setEncoding('utf-8');
-    handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
+    // process.stderr.setEncoding('utf-8');
+    // handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
     
     ports[game.settings.server.port] = game;
 
@@ -232,31 +233,37 @@ function unloadGame(game){
 
 function deleteGame(game) {
     log.info(`Deleting ${game.name}`);
+    let process = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
-    //wait 2 seconds for the game to stop
-    setTimeout(() => {
-        game.getGuild(guild => {
-            if(game.discord.playerRoleId){
-                guild.roles.fetch(game.discord.playerRoleId)
-                    .then(r => r.delete())
-                    .catch(log.error);
-            }
+    game.getGuild(guild => {
+        if(game.discord.playerRoleId){
+            guild.roles.fetch(game.discord.playerRoleId)
+                .then(r => r.delete())
+                .catch(log.error);
+        }
 
-            if(game.discord.channelId){
-                guild.client.channels.fetch(game.discord.channelId)
-                    .then(c => c.delete())
-                    .catch(log.error);
-            }
+        if(game.discord.channelId){
+            guild.client.channels.fetch(game.discord.channelId)
+                .then(c => c.delete())
+                .catch(log.error);
+        }
 
-            if(game.discord.gameLobbyChannelId){
-                guild.client.channels.fetch(game.discord.gameLobbyChannelId)
-                    .then(c => c.delete())
-                    .catch(log.error);
-            }
-        });
+        if(game.discord.gameLobbyChannelId){
+            guild.client.channels.fetch(game.discord.gameLobbyChannelId)
+                .then(c => c.delete())
+                .catch(log.error);
+        }
+    });
+    let cleanup = () => {
         util.deleteGameSave(game);
         util.deleteJSON(game.name);
-    }, 2000);
+    };
+    if(!process){
+        //wait for the game to stop
+        setTimeout(cleanup, 2000);
+    }else{
+        process.on('exit', cleanup);
+    }
 }
 
 function loadGame(name, bot, cb){
@@ -368,10 +375,6 @@ function getLaunchArgs(config){
     if(turns.maxTurnTime) {
         args.push("--hours");
         args.push(turns.maxTurnTime);
-    }
-    if(turns.maxHoldups) {
-        args.push("--maxholdups")
-        args.push(turns.maxHoldups);
     }
 
     //new game settings

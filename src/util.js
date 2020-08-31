@@ -1,5 +1,6 @@
 const log = require("log4js").getLogger();
 
+const ncp = require('ncp').ncp;
 const fs = require("fs");
 const _ = require("lodash");
 const config = require("../res/config.json");
@@ -14,7 +15,6 @@ for(k in EMOJI){
 fs.mkdirSync(config.BOT_SAVE_PATH, {recursive: true}, (err) => {
     if (err) throw err;
 });
-
 
 function domcmd (commands, game, cb = null) {
     const path = config.DOMINION_SAVE_PATH + game.name + '/domcmd';
@@ -54,6 +54,7 @@ function loadJSON(name, cb){
                 let json = JSON.parse(data);
                 cb(json);
             } catch (e) {
+                log.error(`Error loading ${name}`);
                 if (e instanceof SyntaxError) {
                     printError(e, true);
                 } else {
@@ -62,6 +63,36 @@ function loadJSON(name, cb){
             }
         }
     });
+}
+
+function backupGame(name){
+    const path = config.BOT_ARCHIVE_PATH + name;
+
+    let backupActions = [];
+
+    backupActions.push((cb) => fs.rmdir(`${path}_${config.MAX_BACKUP}`, {recursive: true}, cb));
+    let backups = config.MAX_BACKUP;
+    while(backups > 0){
+        let i = --backups;
+        backups.push((cb) => ncp(`${path}_${i}`, `${path}_${i + 1}`, cb));
+    }
+
+    backupActions.push((cb) => ncp(`${config.DOMINION_SAVE_PATH}${name}`, `${path}_${backups}`, cb));
+    backupActions.push((cb) => ncp(`${config.BOT_SAVE_PATH}${name}.json`, `${path}_${backups}/${name}.json`, cb));
+
+    backupActions.reverse();
+
+    let callback = (err) => {
+        if(err) { log.error(err)}
+        let next = backupActions.pop();
+        if(next){
+            next(callback);
+        }else{
+            log.info(`backed up ${name}`);
+        }
+    };
+
+    callback(null);
 }
 
 function printError (error, explicit) {
@@ -175,5 +206,6 @@ module.exports = {
     loadAllGames,
     getSeconds,
     getAvailableMods,
-    getStaleNations
+    getStaleNations,
+    backupGame
 };
