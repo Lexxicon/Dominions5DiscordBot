@@ -144,7 +144,7 @@ function handleStreamLines(outStream, handler){
     const emitter = new EventEmitter();
 
     let buffer = "";
-    let lastEmit = null;
+    let lastEmit = [];
 
     outStream
         .on('data', data => {
@@ -159,8 +159,9 @@ function handleStreamLines(outStream, handler){
     
     emitter.on('line', data => {
         log.debug(`${data}`);
-        if(data != lastEmit){
-            lastEmit = data;
+        if(!lastEmit.includes(data)){
+            lastEmit.push(data);
+            lastEmit = lastEmit.slice(0, 2);
             handler(data);
         }
     });

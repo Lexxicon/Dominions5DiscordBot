@@ -105,8 +105,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
             }
         }else {
             if(s.playerStatus.id == 1){
-                log.debug(`${s}`);
-                if(s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
+                if(game.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
                     activeState.push("Stale");
                 }else{
                     activeState.push(s.turnState.display);
@@ -203,6 +202,7 @@ function bindUpdateGameStatus(msg, filePath, game){
                     domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
                         (m) => {
                             domGame.saveGame(game);
+                            setTimeout(() => util.backupGame(game.name), 10000);
                         });
                 }
                 msg.edit(createEmbeddedGameState(game, currentTurnState, staleNations));

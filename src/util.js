@@ -150,6 +150,10 @@ function getAvailableMods(cb){
 function getStaleNations(game, cb) {
     let stales = [];
     let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
+    if(game.turns < 2) {
+        cb(stales);
+        return;
+    }
 
     if(staleThreshold > 0){
         let staleTime = new Date(game.state.nextTurnStartTime);
