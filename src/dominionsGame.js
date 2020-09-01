@@ -191,14 +191,13 @@ function hostGame(game){
 
     const args = getLaunchArgs(game);
     log.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
-    const process = spawn(config.DOMINION_EXEC_PATH, args, {stdio: 'inherit'});
+    const process = spawn(config.DOMINION_EXEC_PATH, args);
 
-    // these don't seem to work for some reason
-    // process.stdout.setEncoding('utf-8');
-    // handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
+    process.stdout.setEncoding('utf-8');
+    handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
 
-    // process.stderr.setEncoding('utf-8');
-    // handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
+    process.stderr.setEncoding('utf-8');
+    handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
     
     ports[game.settings.server.port] = game;
 

@@ -96,7 +96,7 @@ function startGame(msg, game, arg) {
     }
     let playerCount = game.playerCount;
     let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
-
+    log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
     let provinces = playerCount * provPerPlayer;
     log.info("provinces " + provinces);
     let VP =  Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);

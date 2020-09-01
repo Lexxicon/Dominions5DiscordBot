@@ -105,7 +105,8 @@ function createEmbeddedGameState(game, gameState, staleNations){
             }
         }else {
             if(s.playerStatus.id == 1){
-                if(staleMap[s.stringId] && s.turnStateMessageId.id == 0){
+                log.debug(`${s}`);
+                if(s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
                     activeState.push("Stale");
                 }else{
                     activeState.push(s.turnState.display);
@@ -213,11 +214,11 @@ function bindUpdateGameStatus(msg, filePath, game){
                     blockPingTime.addHours(-12);
                     let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
                     if(timeTillPing > 0){
-                        blockingNotifications[game.name] = setTimeout(domGame.pingBlockingPlayers(game), timeTillPing);
+                        blockingNotifications[game.name] = setTimeout(() => domGame.pingBlockingPlayers(game), timeTillPing);
                     }
                 }
 
-                if(staleNations && staleNations.length > 0 && getBlockingNations(game, staleNations).length == 0 ){
+                if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
                     log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
                     util.domcmd.startGame(game);
                 }

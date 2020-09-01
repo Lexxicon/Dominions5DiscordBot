@@ -74,7 +74,7 @@ function backupGame(name){
     let backups = config.MAX_BACKUP;
     while(backups > 0){
         let i = --backups;
-        backups.push((cb) => ncp(`${path}_${i}`, `${path}_${i + 1}`, cb));
+        backupActions.push((cb) => ncp(`${path}_${i}`, `${path}_${i + 1}`, cb));
     }
 
     backupActions.push((cb) => ncp(`${config.DOMINION_SAVE_PATH}${name}`, `${path}_${backups}`, cb));
