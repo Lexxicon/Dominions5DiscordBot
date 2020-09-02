@@ -161,7 +161,7 @@ function handleStreamLines(outStream, handler){
         log.debug(`${data}`);
         if(!lastEmit.includes(data)){
             lastEmit.push(data);
-            lastEmit = lastEmit.slice(0, 2);
+            lastEmit = lastEmit.slice(0, 3);
             handler(data);
         }
     });

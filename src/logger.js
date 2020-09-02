@@ -12,8 +12,7 @@ log4js.configure({
         file: { 
             type: 'dateFile', 
             filename: 'output.log', 
-            pattern: '.yyyy-MM-dd-hh', 
-            compress: true,
+            pattern: '.yyyy-MM-dd', 
             daysToKeep: 7,
             layout: {
               type: 'pattern', 

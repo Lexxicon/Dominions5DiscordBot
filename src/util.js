@@ -70,15 +70,31 @@ function backupGame(name){
 
     let backupActions = [];
 
-    backupActions.push((cb) => fs.rmdir(`${path}_${config.MAX_BACKUP}`, {recursive: true}, cb));
     let backups = config.MAX_BACKUP;
     while(backups > 0){
         let i = --backups;
-        backupActions.push((cb) => ncp(`${path}_${i}`, `${path}_${i + 1}`, cb));
+        backupActions.push((cb) => {
+            log.debug(`delete ${path}_${i + 1}`);
+            fs.rmdir(`${path}_${i + 1}`, {recursive: true}, cb);
+        });
+        backupActions.push((cb) => {
+            log.debug(`cp ${path}_${i} -> ${path}_${i + 1}`);
+            ncp(`${path}_${i}`, `${path}_${i + 1}`, cb);
+        });
     }
 
-    backupActions.push((cb) => ncp(`${config.DOMINION_SAVE_PATH}${name}`, `${path}_${backups}`, cb));
-    backupActions.push((cb) => ncp(`${config.BOT_SAVE_PATH}${name}.json`, `${path}_${backups}/${name}.json`, cb));
+    backupActions.push((cb) => {
+        log.debug(`delete ${path}_${0}`);
+        fs.rmdir(`${path}_${0}`, {recursive: true}, cb);
+    });
+    backupActions.push((cb) => {
+        log.debug(`backing up save data ${config.DOMINION_SAVE_PATH}${name}`);
+        ncp(`${config.DOMINION_SAVE_PATH}${name}`, `${path}_${backups}`, cb);
+    });
+    backupActions.push((cb) => {
+        log.debug(`backing up bot data ${config.BOT_SAVE_PATH}${name}.json`);
+        ncp(`${config.BOT_SAVE_PATH}${name}.json`, `${path}_${backups}/${name}.json`, cb);
+    });
 
     backupActions.reverse();
 
