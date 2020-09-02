@@ -72,7 +72,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
         }
         activeNames.push(`[${s.nationId}] ${s.name}`);
 
-        let playerName;
+        let playerName = "";
 
         if(s.aiDifficulty > 0){
             playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
@@ -90,30 +90,32 @@ function createEmbeddedGameState(game, gameState, staleNations){
             playerName = `[${s.playerStatus.display}] ${playerName}`;
         }
         activePlayers.push(playerName);
+        let state = "-";
 
         if(s.turnState.id == 9){
             let uploaded = s.playerStatus.id != 0;
             let claimed = game.getPlayerForNation(s.nationId) != null;
             if(uploaded && claimed){
-                activeState.push('Ready');
+                state = 'Ready';
             }else if(claimed && !uploaded) {
-                activeState.push('Upload Pretender');
+                state = 'Upload Pretender';
             }else if(!claimed && uploaded) {
-                activeState.push('Missing Claim');
+                state = 'Missing Claim';
             }else{
-                activeState.push('-');
+                state = '-';
             }
         }else {
             if(s.playerStatus.id == 1){
                 if(game.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
-                    activeState.push("Stale");
+                    state = "Stale";
                 }else{
-                    activeState.push(s.turnState.display);
+                    state = s.turnState.display;
                 }
             }else{
-                activeState.push('-');
+                state = '-';
             }
         }
+        activeState.push(state);
     }
 
     if(gameState.turnState.turn >= 0){
