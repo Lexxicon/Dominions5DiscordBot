@@ -15,6 +15,9 @@ for(k in EMOJI){
 fs.mkdirSync(config.BOT_SAVE_PATH, {recursive: true}, (err) => {
     if (err) throw err;
 });
+fs.mkdirSync(config.BOT_ARCHIVE_PATH, {recursive: true}, (err) => {
+    if (err) throw err;
+});
 
 function domcmd (commands, game, cb = null) {
     const path = config.DOMINION_SAVE_PATH + game.name + '/domcmd';
