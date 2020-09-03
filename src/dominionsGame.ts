@@ -100,8 +100,8 @@ function pingPlayers(game, msg, cb){
 function getBlockingNations(game, staleNations){
     if(!staleNations) staleNations = [];
 
-    let blockingNations = [];
-    for(player of game.playerStatus){
+    let blockingNations : number[] = [];
+    for(let player of game.playerStatus){
         if(player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)){
             blockingNations.push(player.nationID);
         }
@@ -135,7 +135,7 @@ function pingBlockingPlayers(game, cb) {
 
             game.state.notifiedBlockers = true;
             channel.send(`${ping}\nNext turn starts in ${hoursTillHost} hours!`);
-            DocumentFragment.saveGame(game);
+            saveGame(game);
         });
     });
 }
@@ -144,13 +144,13 @@ function handleStreamLines(outStream, handler){
     const emitter = new EventEmitter();
 
     let buffer = "";
-    let lastEmit = [];
+    let lastEmit : Object[] = [];
 
     outStream
         .on('data', data => {
             buffer += data;
             let lines = buffer.split(/[\r\n|\n]/);
-            buffer = lines.pop();
+            buffer = lines.pop() || '';
             lines.forEach(line => emitter.emit('line', line));
         })
         .on('end', () => {
@@ -324,7 +324,7 @@ function wrapGame(game, bot){
     }
     game.save = () => {saveGame(game)};
     game.getPlayerForNation = (nationId) => {
-        for( userID in game.discord.players ){
+        for(let userID in game.discord.players ){
             if(game.discord.players[userID] == nationId)
                 return userID;
         }
@@ -344,7 +344,7 @@ function wrapGame(game, bot){
         return '-';
     };
     
-    for( userID in game.discord.players ){
+    for(let userID in game.discord.players ){
         bot.users.fetch(userID, true);
     }
 
@@ -358,7 +358,7 @@ function getLaunchArgs(config){
     const turns = config.settings.turns;
     const setup = config.settings.setup;
 
-    let args = [];
+    let args : string[] = [];
     // --- standard launch args ---
     args.push("--nosound");
     args.push("--nosteam");
@@ -405,7 +405,7 @@ function getLaunchArgs(config){
     args = args.concat(CONSTANTS.EVENTS[setup.eventRarity]);
 
     args.push(CONSTANTS.STORY_EVENTS[setup.storyEvents]);
-    for(k in setup.slots){
+    for(let k in setup.slots){
         args.push(CONSTANTS.SLOTS[setup.slots[k]])
         args.push(k);
     }
@@ -414,7 +414,7 @@ function getLaunchArgs(config){
     return args;
 }
 
-module.exports = {
+export = {
     create,
     getLaunchArgs,
     loadGame,

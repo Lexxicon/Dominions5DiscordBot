@@ -27,24 +27,24 @@ function cleanup(){
     log.info('Goodbye');
 }
 
-process.on('cleanup',cleanup);
-
 // do app specific cleaning before exiting
 process.on('exit', function () {
-  process.emit('cleanup');
+    cleanup();
 });
 
 // catch ctrl+c event and exit normally
 process.on('SIGINT', function () {
     log.info('Ctrl-C...');
-  process.exit(2);
+    cleanup();
+    process.exit(2);
 });
 
 //catch uncaught exceptions, trace, then exit normally
 process.on('uncaughtException', function(e) {
     log.info(`Uncaught Exception... ${e} ${e.name}`);
     log.info(e.stack);
-  process.exit(99);
+    cleanup();
+    process.exit(99);
 });
 
 bot.on('ready', () => {
@@ -53,7 +53,7 @@ bot.on('ready', () => {
 
 bot.on('message', msg => {
     if( msg.content.startsWith('!')){
-        let handler = null;
+        let handler;
         log.info(msg.channel.name);
         log.info(LOBBY_NAME);
         if (msg.channel.name == LOBBY_NAME) {
@@ -63,6 +63,7 @@ bot.on('message', msg => {
             log.info("Handling game command");
             handler = gameCommandHandler;
         }
+
         let result = 0;
         msg.react(util.emoji(':thinking:')).then(r => {
             result = handler(msg);

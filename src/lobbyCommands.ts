@@ -126,4 +126,4 @@ function handleCommand(msg){
     return 0;
 }
 
-module.exports = handleCommand;
+export = handleCommand;

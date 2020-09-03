@@ -23,7 +23,7 @@ function joinUser(msg, game, nationID){
         if(game.discord.players[msg.member.id]){
             msg.channel.send(`You've already joined!: ${races[game.settings.setup.era][game.discord.players[msg.member.id]]}`);
         }else if(races[game.settings.setup.era][nationID]) {
-            for(otherPlayer in game.discord.players){
+            for(let otherPlayer in game.discord.players){
                 if(game.discord.players[otherPlayer] == nationID){
                     msg.channel.send(`Race is already claimed! race: ${races[game.settings.setup.era][nationID]}`)
                     return -1;
@@ -50,7 +50,7 @@ function switchUser(msg, game, nationID){
         msg.channel.send(`You haven't joined yet!`);
         return -1;
     }else if(races[game.settings.setup.era][nationID]) {
-        for(otherPlayer in game.discord.players){
+        for(let otherPlayer in game.discord.players){
             if(msg.member.id !== otherPlayer && game.discord.players[otherPlayer] == nationID){
                 msg.channel.send(`Race is already claimed! race: ${races[game.settings.setup.era][nationID]}`)
                 return -1;
@@ -193,7 +193,7 @@ function changeGameSettings(msg, game, arg){
                 let settingsPath = args[1].split('.');
                 log.debug(`split path ${settingsPath}`);
                 let settings = game;
-                for(p of settingsPath){
+                for(let p of settingsPath){
                     settings = settings[p];
                 }
                 log.debug(`Result settings: ${settings}`);
@@ -206,7 +206,7 @@ function changeGameSettings(msg, game, arg){
                 log.debug(`split path ${settingsPath}`);
                 let settings = game;
                 let lastValue = '';
-                for(p of settingsPath){
+                for(let p of settingsPath){
                     lastValue = p;
                     settings = settings[p];
                 }
@@ -234,7 +234,7 @@ function handleCommand(msg){
     const arg = split >= input.length ? '' : input.substring(split + 1);
 
     let games = domGame.getGames();
-    for(gameKey in games){
+    for(let gameKey in games){
         let game = games[gameKey];
 
         if(msg.channel.id != game.discord.gameLobbyChannelId){
@@ -277,4 +277,4 @@ function handleCommand(msg){
     return -1;
 }
 
-module.exports = handleCommand;
+export = handleCommand ;

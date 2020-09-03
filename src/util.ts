@@ -8,7 +8,7 @@ const EMOJI = require('./constants.js').EMOJI;
 
 const EMOJI_REGEX = {};
 
-for(k in EMOJI){
+for(let k in EMOJI){
     EMOJI_REGEX[k] = new RegExp(_.escapeRegExp(k), 'gi')
 }
 
@@ -19,7 +19,7 @@ fs.mkdirSync(config.BOT_ARCHIVE_PATH, {recursive: true}, (err) => {
     if (err) throw err;
 });
 
-function domcmd (commands, game, cb = null) {
+function domcmd (commands, game, cb: {(): void} | null = null) {
     const path = config.DOMINION_SAVE_PATH + game.name + '/domcmd';
     fs.writeFile(path, commands, (err) => {
         if(err && game.discord.channel) {
@@ -34,7 +34,7 @@ function domcmd (commands, game, cb = null) {
 }
 
 function emoji(input){
-    for(k in EMOJI){
+    for(let k in EMOJI){
         input = input.replace(EMOJI_REGEX[k], EMOJI[k]);
     }
     return input;
@@ -71,7 +71,7 @@ function loadJSON(name, cb){
 function backupGame(name){
     const path = config.BOT_ARCHIVE_PATH + name;
 
-    let backupActions = [];
+    let backupActions: any[] = [];
 
     let backups = config.MAX_BACKUP;
     while(backups > 0){
@@ -147,7 +147,7 @@ function generateName(){
             return name;
         }
     }
-    throw new 'Failed to create valid name after 30 tries';
+    throw 'Failed to create valid name after 30 tries';
 }
 
 function getSeconds(str) {
@@ -167,7 +167,7 @@ function getAvailableMods(cb){
 }
 
 function getStaleNations(game, cb) {
-    let stales = [];
+    let stales : string[] = [];
     let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
     if(game.turns < 2) {
         cb(stales);
@@ -211,7 +211,7 @@ function getStaleNations(game, cb) {
     }
 }
 
-module.exports = {
+export = {
     findChannel: function (guild, name) {
         return guild.channels.cache.find(c => c.name === name);
     },

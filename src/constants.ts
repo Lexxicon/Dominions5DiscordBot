@@ -1,5 +1,5 @@
 
-module.exports = {
+export = {
     EMOJI: {
         ":thumbsup:":   "👍",
         ":thumbsdown:":  "👎",

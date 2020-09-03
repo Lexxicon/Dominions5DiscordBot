@@ -15,14 +15,44 @@ const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYE
 
 const blockingNotifications = {};
 
-function parseLines(lines){
-    const gameState = {
-        name: "",
-        turnState: {},
-        playerStatus: [],
+class GameState {
+    name: string = "";
+    turnState: {
+        turn: number,
+        era: string,
+        mods: any,
+        turnLimit: number
+    } = {
+        turn: -1,
+        era: 'EARLY',
+        mods: null,
+        turnLimit: -1
     };
+    playerStatus: {
+        nationId: number,
+        pretenderId: number,
+        stringId: string,
+        aiDifficulty: number,
+        playerStatus: {
+            id: number,
+            canBlock: boolean,
+            display: string
+        },
+        name: string,
+        title: string,
+        turnState: {
+            id: number,
+            ready: boolean,
+            display: string
+        },
+    }[] = [];
+}
 
-    for(line of lines){
+function parseLines(lines) : GameState{
+
+    const gameState = new GameState();
+
+    for(let line of lines){
         if(NATION_REGEX.test(line)){
             const groups = line.match(NATION_REGEX).groups;
             gameState.playerStatus.push({
@@ -54,13 +84,13 @@ function parseLines(lines){
 }
 
 function createEmbeddedGameState(game, gameState, staleNations){
-    const fields = [];
-    let activeNames = [];
-    let activePlayers = [];
-    let activeState = [];
+    const fields: {name: string, value: string, inline: boolean}[] = [];
+    let activeNames: string[] = [];
+    let activePlayers: string[] = [];
+    let activeState: string[] = [];
     let staleMap = {};
 
-    for(nation of staleNations){
+    for(let nation of staleNations){
         staleMap[nation] = nation;
     }
 
@@ -141,7 +171,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
         inline: true
     });
 
-    let desc = [];
+    let desc: string[] = [];
 
     desc.push(`Hosted at: ${config.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
@@ -270,7 +300,7 @@ function startWatches(game) {
     }
 }
 
-module.exports = {
+export = {
     parseLines,
     createEmbeddedGameState,
     startWatches
