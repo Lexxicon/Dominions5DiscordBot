@@ -171,6 +171,10 @@ function createEmbeddedGameState(game, gameState, staleNations){
         inline: true
     });
 
+    fields.forEach(v => {
+        if(v.value.length == 0) v.value = '-';
+    });
+
     let desc: string[] = [];
 
     desc.push(`Hosted at: ${config.HOST_URL}`);
