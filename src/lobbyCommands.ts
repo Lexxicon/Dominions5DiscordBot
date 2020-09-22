@@ -1,12 +1,11 @@
 const log = require("log4js").getLogger();
 
-const config = require("../res/config.json");
-const util = require('./util.js');
-const status = require('./dominionsStatus.js');
-const domGame = require('./dominionsGame.js');
+import util from './util.js';
+import status from './dominionsStatus.js';
+import domGame from './dominionsGame.js';
 
-const GAMES_CATEGORY_NAME = config.GAMES_CATEGORY_NAME;
-const LOBBY_NAME = config.LOBBY_NAME.toLowerCase();
+const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME;
+const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
 function createChannel(guild, name, reason, cb){
     name = name.toLowerCase();

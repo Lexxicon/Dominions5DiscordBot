@@ -1,13 +1,12 @@
 const log = require("log4js").getLogger();
 
-const Discord = require('discord.js');
-const fs = require('fs');
-const _ = require('lodash');
+import Discord from 'discord.js';
+import fs from 'fs';
+import _ from 'lodash';
 
-const config = require('../res/config.json');
-const CONSTANTS = require('./constants.js');
-const domGame = require('./dominionsGame.js');
-const util = require('./util.js');
+import CONSTANTS from './constants.js';
+import domGame from './dominionsGame.js';
+import util from './util.js';
 
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
@@ -177,7 +176,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
 
     let desc: string[] = [];
 
-    desc.push(`Hosted at: ${config.HOST_URL}`);
+    desc.push(`Hosted at: ${process.env.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
 
     if(gameState.turnState.turn < 0){
@@ -278,7 +277,7 @@ function watchStatusFile(filePath, game){
 
 function startWatches(game) {
     log.info(`Starting watches on ${game.name}`)
-    const filePath = `${config.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
+    const filePath = `${process.env.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
 
         read(filePath, (lines) => {

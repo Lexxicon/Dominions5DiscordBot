@@ -1,30 +1,27 @@
 require('dotenv').config();
-
-const logging = require('./logger.js');
-const log = require("log4js").getLogger();
-
 require('./prototypes.js');
 
-const _ = require("lodash");
-const Discord = require('discord.js');
-const fs = require('fs');
 
-const config = require("../res/config.json");
-const util = require("./util.js");
-const dominionsStatus = require("./dominionsStatus.js");
-const domGame = require('./dominionsGame.js');
+import logging from './logger.js';
 
-const lobbyCommandHandler = require('./lobbyCommands.js');
-const gameCommandHandler = require('./gameCommands.js');
+import _ from "lodash";
+import Discord, { TextChannel, NewsChannel } from 'discord.js';
 
+import util from "./util.js";
+import dominionsStatus from "./dominionsStatus.js";
+import domGame from './dominionsGame.js';
+
+import lobbyCommandHandler from './lobbyCommands.js';
+import gameCommandHandler from './gameCommands.js';
+
+const log = require("log4js").getLogger();
 const bot = new Discord.Client();
-const TOKEN = process.env.TOKEN;
-const GAMES_CATEGORY_NAME = process.env.GAMES_CATEGORY_NAME;
-const LOBBY_NAME = config.LOBBY_NAME;
+const TOKEN = process.env.TOKEN;;
+const LOBBY_NAME = process.env.DEFAULT_LOBBY_NAME;
 
 function cleanup(){
-    logging.shutdown();
     log.info('Goodbye');
+    logging.shutdown();
 }
 
 // do app specific cleaning before exiting
@@ -48,11 +45,12 @@ process.on('uncaughtException', function(e) {
 });
 
 bot.on('ready', () => {
-    log.info(`Logged in as ${bot.user.tag}!`);
+    log.info(`Logged in as ${bot?.user?.tag}!`);
 });
 
+
 bot.on('message', msg => {
-    if( msg.content.startsWith('!')){
+    if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel)){
         let handler;
         log.info(msg.channel.name);
         log.info(LOBBY_NAME);

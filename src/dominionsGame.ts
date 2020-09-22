@@ -1,29 +1,30 @@
 const log = require("log4js").getLogger();
 
-const _ = require("lodash");
-const EventEmitter = require('events');
-const fs = require("fs");
+import _ from "lodash";
+import EventEmitter from 'events';
 
 const spawn = require('child_process').spawn;
 
-const config = require("../res/config.json");
-const CONSTANTS = require("./constants.js");
-const util = require('./util.js');
+import CONSTANTS from "./constants.js";
+import util from './util.js';
 
 const ports = {};
-_.forEach(config.PORTS, p => ports[p] = null);
+_.forEach(require('parse-numeric-range')(process.env.PORTS), p => ports[p] = null);
 
 const games = {};
 
 function killGames(){
-    _.keys(ports, (key) => {
-        if(ports[key].getProcess){
+
+    _.keys(ports).forEach((key) => {
+        if(ports[key]?.getProcess){
+            log.info(`Killing ${key}`);
             ports[key].getProcess().kill();
             delete ports[key].getProcess;
         }
     });
 }
 process.on('cleanup',killGames);
+// process.on('uncaughtException',killGames);
 
 function create(channel, name, bot){
     const game = {
@@ -114,7 +115,7 @@ function getBlockingNations(game, staleNations){
     return blockingNations;
 }
 
-function pingBlockingPlayers(game, cb) {
+function pingBlockingPlayers(game) {
     game.getGameLobby(channel => { 
         util.getStaleNations(game, (err, staleNations) => {
             if(game.state.notifiedBlockers){
@@ -141,7 +142,7 @@ function pingBlockingPlayers(game, cb) {
 }
 
 function handleStreamLines(outStream, handler){
-    const emitter = new EventEmitter();
+    const emitter = new EventEmitter.EventEmitter();
 
     let buffer = "";
     let lastEmit : Object[] = [];
@@ -191,25 +192,25 @@ function hostGame(game){
     }
 
     const args = getLaunchArgs(game);
-    log.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
-    const process = spawn(config.DOMINION_EXEC_PATH, args);
+    log.info('Spawning Host: ' + process.env.DOMINION_EXEC_PATH + " " + args)
+    const child = spawn(process.env.DOMINION_EXEC_PATH, args);
 
-    process.stdout.setEncoding('utf-8');
-    handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
+    child.stdout.setEncoding('utf-8');
+    handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
 
-    process.stderr.setEncoding('utf-8');
-    handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
+    child.stderr.setEncoding('utf-8');
+    handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
     
     ports[game.settings.server.port] = game;
 
-    process.on('close', (code, sig) => {
+    child.on('close', (code, sig) => {
         delete game.getProcess;
         if(ports[game.settings.server.port] === game){
             ports[game.settings.server.port] = null;
         }
     });
 
-    game.getProcess = () => process;
+    game.getProcess = () => child;
 }
 
 function stopGame(game){
@@ -233,7 +234,7 @@ function unloadGame(game){
 
 function deleteGame(game) {
     log.info(`Deleting ${game.name}`);
-    let process = game.getProcess ? game.getProcess() : null;
+    let childProcess = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
     game.getGuild(guild => {
         if(game.discord.playerRoleId){
@@ -258,11 +259,11 @@ function deleteGame(game) {
         util.deleteGameSave(game);
         util.deleteJSON(game.name);
     };
-    if(!process){
+    if(!childProcess){
         //wait for the game to stop
         setTimeout(cleanup, 2000);
     }else{
-        process.on('exit', cleanup);
+        childProcess.on('exit', cleanup);
     }
 }
 

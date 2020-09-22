@@ -1,13 +1,12 @@
 const log = require("log4js").getLogger();
 
-const _ = require("lodash");
+import _ from "lodash";
 
-const config = require("../res/config.json");
 const races = require("../res/races.json");
-const util = require('./util.js');
-const status = require('./dominionsStatus.js');
-const domGame = require('./dominionsGame.js');
-const constants = require('./constants.js');
+
+import util from './util.js';
+import domGame from './dominionsGame.js';
+import constants from './constants.js';
 
 
 function joinUser(msg, game, nationID){
