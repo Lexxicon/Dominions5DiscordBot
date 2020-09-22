@@ -13,6 +13,7 @@ import domGame from './dominionsGame.js';
 
 import lobbyCommandHandler from './lobbyCommands.js';
 import gameCommandHandler from './gameCommands.js';
+import serverCommandHandler from './serverCommands.js';
 
 const log = require("log4js").getLogger();
 const bot = new Discord.Client();
@@ -53,13 +54,15 @@ bot.on('message', msg => {
     if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel)){
         let handler;
         log.info(msg.channel.name);
-        log.info(LOBBY_NAME);
         if (msg.channel.name == LOBBY_NAME) {
             log.info("Handling lobby command");
             handler = lobbyCommandHandler;
-        }else{
+        }else if(msg.channel.parent?.name == `${process.env.DEFAULT_GAMES_CATEGORY_NAME}`){
             log.info("Handling game command");
             handler = gameCommandHandler;
+        }else{
+            log.info("Handling server command");
+            handler = serverCommandHandler
         }
 
         let result = 0;

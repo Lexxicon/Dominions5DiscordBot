@@ -66,7 +66,7 @@ function switchUser(msg, game, nationID){
 }
 
 function delayTurn(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -82,7 +82,7 @@ function delayTurn(msg, game, arg) {
 }
 
 function deleteGame(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
     
@@ -90,7 +90,7 @@ function deleteGame(msg, game, arg) {
 }
 
 function startGame(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
     let playerCount = game.playerCount;
@@ -127,7 +127,7 @@ function startGame(msg, game, arg) {
 }
 
 function forceTurn(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -137,7 +137,7 @@ function forceTurn(msg, game, arg){
 }
 
 function restartGame(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
     log.info("Killing");
@@ -156,7 +156,7 @@ function restartGame(msg, game, arg){
 }
 
 function changeGameSettings(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -276,4 +276,4 @@ function handleCommand(msg){
     return -1;
 }
 
-export = handleCommand ;
+export = handleCommand;
