@@ -253,10 +253,10 @@ function bindUpdateGameStatus(msg, filePath, game){
                     }
                 }
 
-                if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
-                    log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
-                    util.domcmd.startGame(game);
-                }
+                // if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
+                //     log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
+                //     util.domcmd.startGame(game);
+                // }
             })
         });
     }

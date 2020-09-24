@@ -3,7 +3,7 @@ const log = require("log4js").getLogger();
 import _ from "lodash";
 import EventEmitter from 'events';
 
-const spawn = require('child_process').spawn;
+import {spawn} from 'child_process';
 
 import CONSTANTS from "./constants.js";
 import util from './util.js';
@@ -89,11 +89,14 @@ function pingPlayers(game, msg, cb){
             channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
                 .then(m => {
                     if(game.discord.pingMessageId){
-                        channel.messages.delete(game.discord.pingMessageId);
+                        channel.messages
+                        .delete(game.discord.pingMessageId)
+                        .catch(log.error);
                     }
                     game.discord.pingMessageId = m.id;
                     cb(m);
-                });
+                })
+                .catch(log.error);
         });
     }
 }
@@ -104,7 +107,7 @@ function getBlockingNations(game, staleNations){
     let blockingNations : number[] = [];
     for(let player of game.playerStatus){
         if(player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)){
-            blockingNations.push(player.nationID);
+            blockingNations.push(player.nationId);
         }
     }
     if(blockingNations.length == 0) {
@@ -161,7 +164,7 @@ function handleStreamLines(outStream, handler){
     emitter.on('line', data => {
         log.debug(`${data}`);
         if(!lastEmit.includes(data)){
-            lastEmit.push(data);
+            lastEmit.unshift(data);
             lastEmit = lastEmit.slice(0, 3);
             handler(data);
         }
@@ -170,6 +173,7 @@ function handleStreamLines(outStream, handler){
 
 function hostGame(game){
     log.info(`hosting: ${game.name}`);
+    log.debug(`hosting right version? ${games[game.name] === game}`);
     if(!game.settings.server.port){
         let port = _.findKey(ports, p => p === null);
         if(port){
@@ -192,8 +196,8 @@ function hostGame(game){
     }
 
     const args = getLaunchArgs(game);
-    log.info('Spawning Host: ' + process.env.DOMINION_EXEC_PATH + " " + args)
-    const child = spawn(process.env.DOMINION_EXEC_PATH, args);
+    log.info(`Spawning Host: ${process.env.DOMINION_EXEC_PATH } ${args}`)
+    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args);
 
     child.stdout.setEncoding('utf-8');
     handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
@@ -209,15 +213,16 @@ function hostGame(game){
             ports[game.settings.server.port] = null;
         }
     });
-
+    log.debug(`binding process on ${game.name} to ${child} ${child.pid}`);
     game.getProcess = () => child;
+    game.canary = child.pid;
 }
 
 function stopGame(game){
-    log.info(`stopping ${game.name}`)
+    log.info(`stopping ${game.name} ${game.canary}`)
     if(game.getProcess){
         game.getProcess().kill();
-        delete game.getProcess;
+        game.getProcess = null;
     }
     if(ports[game.settings.server.port] === game){
         ports[game.settings.server.port] = null;
@@ -225,7 +230,7 @@ function stopGame(game){
 }
 
 function unloadGame(game){
-    log.info(`unloading: ${game.name}`);
+    log.info(`unloading: ${game.name} ${game.canary}`);
     stopGame(game);
     if(games[game.name] === game){
         delete games[game.name];
@@ -233,7 +238,7 @@ function unloadGame(game){
 }
 
 function deleteGame(game) {
-    log.info(`Deleting ${game.name}`);
+    log.info(`Deleting ${game.name} ${game.canary}`);
     let childProcess = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
     game.getGuild(guild => {
@@ -291,10 +296,12 @@ function wrapGame(game, bot){
     let channel = null;
     game.getChannel = (cb) => {
         if(channel === null){
-           bot.channels.fetch(game.discord.channelId, true).then(c => {
+           bot.channels.fetch(game.discord.channelId, true)
+           .then(c => {
                 channel = c;
                 cb(c);
-            });
+            })
+            .catch(log.error);
         }else{
             cb(channel);
         }
@@ -303,10 +310,12 @@ function wrapGame(game, bot){
     let gameLobby = null;
     game.getGameLobby = (cb) => {
         if(gameLobby === null){
-           bot.channels.fetch(game.discord.gameLobbyChannelId, true).then(c => {
-            gameLobby = c;
+           bot.channels.fetch(game.discord.gameLobbyChannelId, true)
+           .then(c => {
+                gameLobby = c;
                 cb(c);
-            });
+            })
+            .catch(log.error);
         }else{
             cb(gameLobby);
         }

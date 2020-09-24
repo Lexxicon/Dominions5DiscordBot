@@ -69,14 +69,23 @@ bot.on('message', msg => {
         msg.react(util.emoji(':thinking:')).then(r => {
             result = handler(msg);
         }).then( r => {
-            msg.reactions.removeAll();
+            msg.reactions.removeAll()
+            .catch(err => {
+                log.error(err);
+            });
             if(result >= 0){
                 msg.react(util.emoji(':thumbsup:'));
             }else{
                 msg.react(util.emoji(':thumbsdown:'));
             }
         }).catch( err => {
-            msg.reactions.removeAll();
+            msg.reactions.removeAll()
+            .then(() => {
+                return msg.react(util.emoji(':no_entry_sign:'));
+            })
+            .catch(err => {
+                log.error(err);
+            })
             msg.react(util.emoji(':no_entry_sign:'))
             log.error(err);
         });

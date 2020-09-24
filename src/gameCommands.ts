@@ -108,7 +108,7 @@ function startGame(msg, game, arg) {
     log.info(game.settings.setup.thrones);
     domGame.saveGame(game);
     log.info("Killing")
-    let process = game.getProcess ? game.getProcess() : null;
+    let childProcess = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
     let start = () => {
         log.info("Spawning")
@@ -116,11 +116,11 @@ function startGame(msg, game, arg) {
         util.domcmd.startGame({name: game.name});
     };
 
-    if(!process){
+    if(!childProcess){
         //wait for game to close
         setTimeout(start, 10000);
     }else{
-        process.on('exit', start);
+        childProcess.on('exit', start);
     }
 
     return 0;
@@ -140,19 +140,22 @@ function restartGame(msg, game, arg){
     if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
-    log.info("Killing");
-    let process = game.getProcess ? game.getProcess() : null;
+    log.info(`Killing ${game.name} ${game.canary}`);
+    let gameProcess = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
     let host = () => {
         log.info("Spawning")
         domGame.hostGame(game);
     };
-    if(!process){
+    if(!gameProcess){
+        log.debug("Process not found. Waiting instead");
         //wait for game to close
         setTimeout(host, 10000);
     }else{
-        process.on('exit', host);
+        log.debug("Hooking exit");
+        gameProcess.on('exit', host);
     }
+    return 0;
 }
 
 function changeGameSettings(msg, game, arg){
@@ -262,7 +265,7 @@ function handleCommand(msg){
             case 'resign':
                 return
             case 'backup':
-                if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+                if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
                     return -1;
                 }
                 util.backupGame(game.name);
