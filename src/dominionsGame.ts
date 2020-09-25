@@ -24,7 +24,6 @@ function killGames(){
     });
 }
 process.on('cleanup',killGames);
-// process.on('uncaughtException',killGames);
 
 function create(channel, name, bot){
     const game = {
@@ -207,7 +206,7 @@ function hostGame(game){
     
     ports[game.settings.server.port] = game;
 
-    child.on('close', (code, sig) => {
+    child.on('exit', (code, sig) => {
         delete game.getProcess;
         if(ports[game.settings.server.port] === game){
             ports[game.settings.server.port] = null;

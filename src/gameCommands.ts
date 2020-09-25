@@ -153,7 +153,7 @@ function restartGame(msg, game, arg){
         setTimeout(host, 10000);
     }else{
         log.debug("Hooking exit");
-        gameProcess.on('exit', host);
+        gameProcess.on('exit', () => setTimeout(host, 100));
     }
     return 0;
 }
@@ -223,7 +223,25 @@ function changeGameSettings(msg, game, arg){
 }
 
 function resign(msg, game, arg) {
-    throw `can't do that Dave`;
+    let roleID = game.discord.playerRoleId;
+    if(roleID){
+        msg.guild.roles.fetch(roleID)
+            .then(role => {
+                msg.member.roles.remove(role);
+            })
+            .catch(log.error);
+    }
+    if(game.discord.players[msg.member.id]){
+        let nationID = game.discord.players[msg.member.id];
+        let displayName = `${game.getDisplayName(nationID)}`;
+        delete game.discord.players[msg.member.id];
+        setTimeout(() => {
+            if(game.update) game.update();
+            msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
+        }, 1000);
+        game.save();
+    }
+    return 0;
 }
 
 function handleCommand(msg){
@@ -263,7 +281,7 @@ function handleCommand(msg){
                 util.getStaleNations(game, (er, nation) => msg.channel.send(`Stale Nations: ${nation}`));
                 return 0;
             case 'resign':
-                return
+                return resign(msg, game, arg);
             case 'backup':
                 if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
                     return -1;

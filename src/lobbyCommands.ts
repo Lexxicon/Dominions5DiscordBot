@@ -25,7 +25,9 @@ function createChannel(guild, name, reason, cb){
         type: 'text',
         parent: category.id,
         reason: reason
-    }).then(cb);
+    })
+    .then(cb)
+    .catch(log.error);
 }
 
 function deleteChannel(guild, name, reason){
@@ -58,16 +60,13 @@ function createNewGame(msg, era){
     log.info(`Creating ${gameName}`);
 
     log.info(`Creating channel`);
-    createChannel(msg.channel.guild, `${gameName}-state`, `Created by request of ${msg.author.username}`, (channel) => {
+    createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`, (c) => {
         log.info(`Creating game`);
-        let game = domGame.create(channel, gameName, msg.client);
+        let game = domGame.create(c, gameName, msg.client);
 
         if(era) game.settings.setup.era = era;
+        game.discord.gameLobbyChannelId = c.id;
 
-        createChannel(msg.channel.guild, `${gameName}-lobby`, `Created by request of ${msg.author.username}`, (c) => {
-            game.discord.gameLobbyChannelId = c.id;
-            game.save();
-        });
         msg.guild.roles.create({
             data: {
                 name:`${gameName}-player`,
@@ -75,19 +74,19 @@ function createNewGame(msg, era){
             }
         }).then(r => {
             game.discord.playerRoleId = r.id;
+            log.info(`Saving game`);
+            util.saveJSON(game.name, game);
+            log.info(`Hosting game`);
+            domGame.hostGame(game);
+            setTimeout(() => {
+                log.info(`Watching game`);
+                status.startWatches(game);
+                util.saveJSON(game.name, game);
+            }, 3000);
         }).catch(err => {
             log.error(err);
             throw err;
         });
-        log.info(`Saving game`);
-        util.saveJSON(game.name, game);
-        log.info(`Hosting game`);
-        domGame.hostGame(game);
-        setTimeout(() => {
-            log.info(`Watching game`);
-            status.startWatches(game);
-            util.saveJSON(game.name, game);
-        }, 3000);
     });
 }
 
