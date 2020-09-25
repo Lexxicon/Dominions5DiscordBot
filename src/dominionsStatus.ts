@@ -1,13 +1,12 @@
 const log = require("log4js").getLogger();
 
-const Discord = require('discord.js');
-const fs = require('fs');
-const _ = require('lodash');
+import Discord from 'discord.js';
+import fs from 'fs';
+import _ from 'lodash';
 
-const config = require('../res/config.json');
-const CONSTANTS = require('./constants.js');
-const domGame = require('./dominionsGame.js');
-const util = require('./util.js');
+import CONSTANTS from './constants.js';
+import domGame from './dominionsGame.js';
+import util from './util.js';
 
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
@@ -15,14 +14,44 @@ const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYE
 
 const blockingNotifications = {};
 
-function parseLines(lines){
-    const gameState = {
-        name: "",
-        turnState: {},
-        playerStatus: [],
+class GameState {
+    name: string = "";
+    turnState: {
+        turn: number,
+        era: string,
+        mods: any,
+        turnLimit: number
+    } = {
+        turn: -1,
+        era: 'EARLY',
+        mods: null,
+        turnLimit: -1
     };
+    playerStatus: {
+        nationId: number,
+        pretenderId: number,
+        stringId: string,
+        aiDifficulty: number,
+        playerStatus: {
+            id: number,
+            canBlock: boolean,
+            display: string
+        },
+        name: string,
+        title: string,
+        turnState: {
+            id: number,
+            ready: boolean,
+            display: string
+        },
+    }[] = [];
+}
 
-    for(line of lines){
+function parseLines(lines) : GameState{
+
+    const gameState = new GameState();
+
+    for(let line of lines){
         if(NATION_REGEX.test(line)){
             const groups = line.match(NATION_REGEX).groups;
             gameState.playerStatus.push({
@@ -54,13 +83,13 @@ function parseLines(lines){
 }
 
 function createEmbeddedGameState(game, gameState, staleNations){
-    const fields = [];
-    let activeNames = [];
-    let activePlayers = [];
-    let activeState = [];
+    const fields: {name: string, value: string, inline: boolean}[] = [];
+    let activeNames: string[] = [];
+    let activePlayers: string[] = [];
+    let activeState: string[] = [];
     let staleMap = {};
 
-    for(nation of staleNations){
+    for(let nation of staleNations){
         staleMap[nation] = nation;
     }
 
@@ -141,9 +170,13 @@ function createEmbeddedGameState(game, gameState, staleNations){
         inline: true
     });
 
-    let desc = [];
+    fields.forEach(v => {
+        if(v.value.length == 0) v.value = '-';
+    });
 
-    desc.push(`Hosted at: ${config.HOST_URL}`);
+    let desc: string[] = [];
+
+    desc.push(`Hosted at: ${process.env.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
 
     if(gameState.turnState.turn < 0){
@@ -220,10 +253,10 @@ function bindUpdateGameStatus(msg, filePath, game){
                     }
                 }
 
-                if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
-                    log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
-                    util.domcmd.startGame(game);
-                }
+                // if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
+                //     log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
+                //     util.domcmd.startGame(game);
+                // }
             })
         });
     }
@@ -244,7 +277,7 @@ function watchStatusFile(filePath, game){
 
 function startWatches(game) {
     log.info(`Starting watches on ${game.name}`)
-    const filePath = `${config.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
+    const filePath = `${process.env.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
 
         read(filePath, (lines) => {
@@ -270,7 +303,7 @@ function startWatches(game) {
     }
 }
 
-module.exports = {
+export = {
     parseLines,
     createEmbeddedGameState,
     startWatches

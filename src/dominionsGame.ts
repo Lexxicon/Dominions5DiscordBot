@@ -1,23 +1,23 @@
 const log = require("log4js").getLogger();
 
-const _ = require("lodash");
-const EventEmitter = require('events');
-const fs = require("fs");
+import _ from "lodash";
+import EventEmitter from 'events';
 
-const spawn = require('child_process').spawn;
+import {spawn} from 'child_process';
 
-const config = require("../res/config.json");
-const CONSTANTS = require("./constants.js");
-const util = require('./util.js');
+import CONSTANTS from "./constants.js";
+import util from './util.js';
 
 const ports = {};
-_.forEach(config.PORTS, p => ports[p] = null);
+_.forEach(require('parse-numeric-range')(process.env.PORTS), p => ports[p] = null);
 
 const games = {};
 
 function killGames(){
-    _.keys(ports, (key) => {
-        if(ports[key].getProcess){
+
+    _.keys(ports).forEach((key) => {
+        if(ports[key]?.getProcess){
+            log.info(`Killing ${key}`);
             ports[key].getProcess().kill();
             delete ports[key].getProcess;
         }
@@ -88,11 +88,14 @@ function pingPlayers(game, msg, cb){
             channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
                 .then(m => {
                     if(game.discord.pingMessageId){
-                        channel.messages.delete(game.discord.pingMessageId);
+                        channel.messages
+                        .delete(game.discord.pingMessageId)
+                        .catch(log.error);
                     }
                     game.discord.pingMessageId = m.id;
                     cb(m);
-                });
+                })
+                .catch(log.error);
         });
     }
 }
@@ -100,10 +103,10 @@ function pingPlayers(game, msg, cb){
 function getBlockingNations(game, staleNations){
     if(!staleNations) staleNations = [];
 
-    let blockingNations = [];
-    for(player of game.playerStatus){
+    let blockingNations : number[] = [];
+    for(let player of game.playerStatus){
         if(player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)){
-            blockingNations.push(player.nationID);
+            blockingNations.push(player.nationId);
         }
     }
     if(blockingNations.length == 0) {
@@ -114,7 +117,7 @@ function getBlockingNations(game, staleNations){
     return blockingNations;
 }
 
-function pingBlockingPlayers(game, cb) {
+function pingBlockingPlayers(game) {
     game.getGameLobby(channel => { 
         util.getStaleNations(game, (err, staleNations) => {
             if(game.state.notifiedBlockers){
@@ -135,22 +138,22 @@ function pingBlockingPlayers(game, cb) {
 
             game.state.notifiedBlockers = true;
             channel.send(`${ping}\nNext turn starts in ${hoursTillHost} hours!`);
-            DocumentFragment.saveGame(game);
+            saveGame(game);
         });
     });
 }
 
 function handleStreamLines(outStream, handler){
-    const emitter = new EventEmitter();
+    const emitter = new EventEmitter.EventEmitter();
 
     let buffer = "";
-    let lastEmit = [];
+    let lastEmit : Object[] = [];
 
     outStream
         .on('data', data => {
             buffer += data;
             let lines = buffer.split(/[\r\n|\n]/);
-            buffer = lines.pop();
+            buffer = lines.pop() || '';
             lines.forEach(line => emitter.emit('line', line));
         })
         .on('end', () => {
@@ -160,7 +163,7 @@ function handleStreamLines(outStream, handler){
     emitter.on('line', data => {
         log.debug(`${data}`);
         if(!lastEmit.includes(data)){
-            lastEmit.push(data);
+            lastEmit.unshift(data);
             lastEmit = lastEmit.slice(0, 3);
             handler(data);
         }
@@ -169,6 +172,7 @@ function handleStreamLines(outStream, handler){
 
 function hostGame(game){
     log.info(`hosting: ${game.name}`);
+    log.debug(`hosting right version? ${games[game.name] === game}`);
     if(!game.settings.server.port){
         let port = _.findKey(ports, p => p === null);
         if(port){
@@ -191,32 +195,33 @@ function hostGame(game){
     }
 
     const args = getLaunchArgs(game);
-    log.info('Spawning Host: ' + config.DOMINION_EXEC_PATH + " " + args)
-    const process = spawn(config.DOMINION_EXEC_PATH, args);
+    log.info(`Spawning Host: ${process.env.DOMINION_EXEC_PATH } ${args}`)
+    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args);
 
-    process.stdout.setEncoding('utf-8');
-    handleStreamLines(process.stdout, (data) => log.info(`[${game.name}] ${data}`));
+    child.stdout.setEncoding('utf-8');
+    handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
 
-    process.stderr.setEncoding('utf-8');
-    handleStreamLines(process.stderr, (data) => log.error(`[${game.name}] ${data}`));
+    child.stderr.setEncoding('utf-8');
+    handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
     
     ports[game.settings.server.port] = game;
 
-    process.on('close', (code, sig) => {
+    child.on('exit', (code, sig) => {
         delete game.getProcess;
         if(ports[game.settings.server.port] === game){
             ports[game.settings.server.port] = null;
         }
     });
-
-    game.getProcess = () => process;
+    log.debug(`binding process on ${game.name} to ${child} ${child.pid}`);
+    game.getProcess = () => child;
+    game.canary = child.pid;
 }
 
 function stopGame(game){
-    log.info(`stopping ${game.name}`)
+    log.info(`stopping ${game.name} ${game.canary}`)
     if(game.getProcess){
         game.getProcess().kill();
-        delete game.getProcess;
+        game.getProcess = null;
     }
     if(ports[game.settings.server.port] === game){
         ports[game.settings.server.port] = null;
@@ -224,7 +229,7 @@ function stopGame(game){
 }
 
 function unloadGame(game){
-    log.info(`unloading: ${game.name}`);
+    log.info(`unloading: ${game.name} ${game.canary}`);
     stopGame(game);
     if(games[game.name] === game){
         delete games[game.name];
@@ -232,8 +237,8 @@ function unloadGame(game){
 }
 
 function deleteGame(game) {
-    log.info(`Deleting ${game.name}`);
-    let process = game.getProcess ? game.getProcess() : null;
+    log.info(`Deleting ${game.name} ${game.canary}`);
+    let childProcess = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
     game.getGuild(guild => {
         if(game.discord.playerRoleId){
@@ -258,11 +263,11 @@ function deleteGame(game) {
         util.deleteGameSave(game);
         util.deleteJSON(game.name);
     };
-    if(!process){
+    if(!childProcess){
         //wait for the game to stop
         setTimeout(cleanup, 2000);
     }else{
-        process.on('exit', cleanup);
+        childProcess.on('exit', cleanup);
     }
 }
 
@@ -290,10 +295,12 @@ function wrapGame(game, bot){
     let channel = null;
     game.getChannel = (cb) => {
         if(channel === null){
-           bot.channels.fetch(game.discord.channelId, true).then(c => {
+           bot.channels.fetch(game.discord.channelId, true)
+           .then(c => {
                 channel = c;
                 cb(c);
-            });
+            })
+            .catch(log.error);
         }else{
             cb(channel);
         }
@@ -302,10 +309,12 @@ function wrapGame(game, bot){
     let gameLobby = null;
     game.getGameLobby = (cb) => {
         if(gameLobby === null){
-           bot.channels.fetch(game.discord.gameLobbyChannelId, true).then(c => {
-            gameLobby = c;
+           bot.channels.fetch(game.discord.gameLobbyChannelId, true)
+           .then(c => {
+                gameLobby = c;
                 cb(c);
-            });
+            })
+            .catch(log.error);
         }else{
             cb(gameLobby);
         }
@@ -324,7 +333,7 @@ function wrapGame(game, bot){
     }
     game.save = () => {saveGame(game)};
     game.getPlayerForNation = (nationId) => {
-        for( userID in game.discord.players ){
+        for(let userID in game.discord.players ){
             if(game.discord.players[userID] == nationId)
                 return userID;
         }
@@ -344,7 +353,7 @@ function wrapGame(game, bot){
         return '-';
     };
     
-    for( userID in game.discord.players ){
+    for(let userID in game.discord.players ){
         bot.users.fetch(userID, true);
     }
 
@@ -358,7 +367,7 @@ function getLaunchArgs(config){
     const turns = config.settings.turns;
     const setup = config.settings.setup;
 
-    let args = [];
+    let args : string[] = [];
     // --- standard launch args ---
     args.push("--nosound");
     args.push("--nosteam");
@@ -405,7 +414,7 @@ function getLaunchArgs(config){
     args = args.concat(CONSTANTS.EVENTS[setup.eventRarity]);
 
     args.push(CONSTANTS.STORY_EVENTS[setup.storyEvents]);
-    for(k in setup.slots){
+    for(let k in setup.slots){
         args.push(CONSTANTS.SLOTS[setup.slots[k]])
         args.push(k);
     }
@@ -414,7 +423,7 @@ function getLaunchArgs(config){
     return args;
 }
 
-module.exports = {
+export = {
     create,
     getLaunchArgs,
     loadGame,

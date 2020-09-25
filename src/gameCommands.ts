@@ -1,13 +1,12 @@
 const log = require("log4js").getLogger();
 
-const _ = require("lodash");
+import _ from "lodash";
 
-const config = require("../res/config.json");
 const races = require("../res/races.json");
-const util = require('./util.js');
-const status = require('./dominionsStatus.js');
-const domGame = require('./dominionsGame.js');
-const constants = require('./constants.js');
+
+import util from './util.js';
+import domGame from './dominionsGame.js';
+import constants from './constants.js';
 
 
 function joinUser(msg, game, nationID){
@@ -23,7 +22,7 @@ function joinUser(msg, game, nationID){
         if(game.discord.players[msg.member.id]){
             msg.channel.send(`You've already joined!: ${races[game.settings.setup.era][game.discord.players[msg.member.id]]}`);
         }else if(races[game.settings.setup.era][nationID]) {
-            for(otherPlayer in game.discord.players){
+            for(let otherPlayer in game.discord.players){
                 if(game.discord.players[otherPlayer] == nationID){
                     msg.channel.send(`Race is already claimed! race: ${races[game.settings.setup.era][nationID]}`)
                     return -1;
@@ -50,7 +49,7 @@ function switchUser(msg, game, nationID){
         msg.channel.send(`You haven't joined yet!`);
         return -1;
     }else if(races[game.settings.setup.era][nationID]) {
-        for(otherPlayer in game.discord.players){
+        for(let otherPlayer in game.discord.players){
             if(msg.member.id !== otherPlayer && game.discord.players[otherPlayer] == nationID){
                 msg.channel.send(`Race is already claimed! race: ${races[game.settings.setup.era][nationID]}`)
                 return -1;
@@ -67,7 +66,7 @@ function switchUser(msg, game, nationID){
 }
 
 function delayTurn(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -83,7 +82,7 @@ function delayTurn(msg, game, arg) {
 }
 
 function deleteGame(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
     
@@ -91,7 +90,7 @@ function deleteGame(msg, game, arg) {
 }
 
 function startGame(msg, game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
     let playerCount = game.playerCount;
@@ -109,7 +108,7 @@ function startGame(msg, game, arg) {
     log.info(game.settings.setup.thrones);
     domGame.saveGame(game);
     log.info("Killing")
-    let process = game.getProcess ? game.getProcess() : null;
+    let childProcess = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
     let start = () => {
         log.info("Spawning")
@@ -117,18 +116,18 @@ function startGame(msg, game, arg) {
         util.domcmd.startGame({name: game.name});
     };
 
-    if(!process){
+    if(!childProcess){
         //wait for game to close
         setTimeout(start, 10000);
     }else{
-        process.on('exit', start);
+        childProcess.on('exit', start);
     }
 
     return 0;
 }
 
 function forceTurn(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -138,26 +137,29 @@ function forceTurn(msg, game, arg){
 }
 
 function restartGame(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
-    log.info("Killing");
-    let process = game.getProcess ? game.getProcess() : null;
+    log.info(`Killing ${game.name} ${game.canary}`);
+    let gameProcess = game.getProcess ? game.getProcess() : null;
     domGame.stopGame(game);
     let host = () => {
         log.info("Spawning")
         domGame.hostGame(game);
     };
-    if(!process){
+    if(!gameProcess){
+        log.debug("Process not found. Waiting instead");
         //wait for game to close
         setTimeout(host, 10000);
     }else{
-        process.on('exit', host);
+        log.debug("Hooking exit");
+        gameProcess.on('exit', () => setTimeout(host, 100));
     }
+    return 0;
 }
 
 function changeGameSettings(msg, game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
 
@@ -193,7 +195,7 @@ function changeGameSettings(msg, game, arg){
                 let settingsPath = args[1].split('.');
                 log.debug(`split path ${settingsPath}`);
                 let settings = game;
-                for(p of settingsPath){
+                for(let p of settingsPath){
                     settings = settings[p];
                 }
                 log.debug(`Result settings: ${settings}`);
@@ -206,7 +208,7 @@ function changeGameSettings(msg, game, arg){
                 log.debug(`split path ${settingsPath}`);
                 let settings = game;
                 let lastValue = '';
-                for(p of settingsPath){
+                for(let p of settingsPath){
                     lastValue = p;
                     settings = settings[p];
                 }
@@ -221,7 +223,25 @@ function changeGameSettings(msg, game, arg){
 }
 
 function resign(msg, game, arg) {
-    throw `can't do that Dave`;
+    let roleID = game.discord.playerRoleId;
+    if(roleID){
+        msg.guild.roles.fetch(roleID)
+            .then(role => {
+                msg.member.roles.remove(role);
+            })
+            .catch(log.error);
+    }
+    if(game.discord.players[msg.member.id]){
+        let nationID = game.discord.players[msg.member.id];
+        let displayName = `${game.getDisplayName(nationID)}`;
+        delete game.discord.players[msg.member.id];
+        setTimeout(() => {
+            if(game.update) game.update();
+            msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
+        }, 1000);
+        game.save();
+    }
+    return 0;
 }
 
 function handleCommand(msg){
@@ -234,7 +254,7 @@ function handleCommand(msg){
     const arg = split >= input.length ? '' : input.substring(split + 1);
 
     let games = domGame.getGames();
-    for(gameKey in games){
+    for(let gameKey in games){
         let game = games[gameKey];
 
         if(msg.channel.id != game.discord.gameLobbyChannelId){
@@ -261,9 +281,9 @@ function handleCommand(msg){
                 util.getStaleNations(game, (er, nation) => msg.channel.send(`Stale Nations: ${nation}`));
                 return 0;
             case 'resign':
-                return
+                return resign(msg, game, arg);
             case 'backup':
-                if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
+                if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
                     return -1;
                 }
                 util.backupGame(game.name);
@@ -277,4 +297,4 @@ function handleCommand(msg){
     return -1;
 }
 
-module.exports = handleCommand;
+export = handleCommand;

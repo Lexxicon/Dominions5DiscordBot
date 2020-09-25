@@ -1,9 +1,10 @@
+require('source-map-support').install();
 const log4js = require("log4js");
 
 log4js.configure({
     appenders: {
         console: {
-          type: 'stdout',
+          type: 'console', 
           layout: {
             type: 'pattern', 
             pattern: '%d %p %c %f{2}:%l %m'
@@ -30,6 +31,6 @@ log4js.getLogger().info(`-------------- Application Starting ${new Date()} -----
 log4js.getLogger().info(``);
 
 
-module.exports = {
+export = {
     shutdown: log4js.shutdown
 }

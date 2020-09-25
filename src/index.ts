@@ -1,80 +1,91 @@
 require('dotenv').config();
-
-const logging = require('./logger.js');
-const log = require("log4js").getLogger();
-
 require('./prototypes.js');
 
-const _ = require("lodash");
-const Discord = require('discord.js');
-const fs = require('fs');
 
-const config = require("../res/config.json");
-const util = require("./util.js");
-const dominionsStatus = require("./dominionsStatus.js");
-const domGame = require('./dominionsGame.js');
+import logging from './logger.js';
 
-const lobbyCommandHandler = require('./lobbyCommands.js');
-const gameCommandHandler = require('./gameCommands.js');
+import _ from "lodash";
+import Discord, { TextChannel, NewsChannel } from 'discord.js';
 
+import util from "./util.js";
+import dominionsStatus from "./dominionsStatus.js";
+import domGame from './dominionsGame.js';
+
+import lobbyCommandHandler from './lobbyCommands.js';
+import gameCommandHandler from './gameCommands.js';
+import serverCommandHandler from './serverCommands.js';
+
+const log = require("log4js").getLogger();
 const bot = new Discord.Client();
-const TOKEN = process.env.TOKEN;
-const GAMES_CATEGORY_NAME = process.env.GAMES_CATEGORY_NAME;
-const LOBBY_NAME = config.LOBBY_NAME;
+const TOKEN = process.env.TOKEN;;
+const LOBBY_NAME = process.env.DEFAULT_LOBBY_NAME;
 
 function cleanup(){
-    logging.shutdown();
     log.info('Goodbye');
+    logging.shutdown();
 }
-
-process.on('cleanup',cleanup);
 
 // do app specific cleaning before exiting
 process.on('exit', function () {
-  process.emit('cleanup');
+    cleanup();
 });
 
 // catch ctrl+c event and exit normally
 process.on('SIGINT', function () {
     log.info('Ctrl-C...');
-  process.exit(2);
+    cleanup();
+    process.exit(2);
 });
 
 //catch uncaught exceptions, trace, then exit normally
 process.on('uncaughtException', function(e) {
     log.info(`Uncaught Exception... ${e} ${e.name}`);
     log.info(e.stack);
-  process.exit(99);
+    cleanup();
+    process.exit(99);
 });
 
 bot.on('ready', () => {
-    log.info(`Logged in as ${bot.user.tag}!`);
+    log.info(`Logged in as ${bot?.user?.tag}!`);
 });
 
+
 bot.on('message', msg => {
-    if( msg.content.startsWith('!')){
-        let handler = null;
+    if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel)){
+        let handler;
         log.info(msg.channel.name);
-        log.info(LOBBY_NAME);
         if (msg.channel.name == LOBBY_NAME) {
             log.info("Handling lobby command");
             handler = lobbyCommandHandler;
-        }else{
+        }else if(msg.channel.parent?.name == `${process.env.DEFAULT_GAMES_CATEGORY_NAME}`){
             log.info("Handling game command");
             handler = gameCommandHandler;
+        }else{
+            log.info("Handling server command");
+            handler = serverCommandHandler
         }
+
         let result = 0;
         msg.react(util.emoji(':thinking:')).then(r => {
             result = handler(msg);
         }).then( r => {
-            msg.reactions.removeAll();
+            msg.reactions.removeAll()
+            .catch(err => {
+                log.error(err);
+            });
             if(result >= 0){
                 msg.react(util.emoji(':thumbsup:'));
             }else{
                 msg.react(util.emoji(':thumbsdown:'));
             }
         }).catch( err => {
-            msg.reactions.removeAll();
+            msg.reactions.removeAll()
+            .then(() => {
+                return msg.react(util.emoji(':no_entry_sign:'));
+            })
+            .catch(err => {
+                log.error(err);
+            })
             msg.react(util.emoji(':no_entry_sign:'))
             log.error(err);
         });
