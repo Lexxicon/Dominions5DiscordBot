@@ -3,6 +3,7 @@ const log = require("log4js").getLogger();
 import util from './util.js';
 import status from './dominionsStatus.js';
 import domGame from './dominionsGame.js';
+import { Message } from 'discord.js';
 
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
@@ -92,9 +93,13 @@ function createNewGame(msg, era){
 
 let pingMsgs = {};
 
-function handleCommand(msg){
+function handleCommand(msg: Message){
+    if(!msg.member || !msg.guild){
+        return;
+    }
+
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
-        return
+        return;
     }
     const input = msg.content.substring(1);
 
@@ -117,6 +122,8 @@ function handleCommand(msg){
                     log.info(`There are ${role.cache.size} roles.`);
                 });
             break;
+        case 'ping':
+            msg.channel.send(`<@${msg.author.id}>`);
         default:
             log.warn(`unsupported command! ${command}`);
             return -1;
