@@ -1,19 +1,14 @@
 require('dotenv').config();
 require('./prototypes.js');
 
-
-import logging from './logger.js';
-
-import _ from "lodash";
-import Discord, { TextChannel, NewsChannel } from 'discord.js';
-
-import util from "./util.js";
+import Discord, { NewsChannel, TextChannel } from 'discord.js';
+import { hostGame, loadGame } from './dominionsGame.js';
 import dominionsStatus from "./dominionsStatus.js";
-import domGame from './dominionsGame.js';
-
-import lobbyCommandHandler from './lobbyCommands.js';
 import gameCommandHandler from './gameCommands.js';
+import lobbyCommandHandler from './lobbyCommands.js';
+import logging from './logger.js';
 import serverCommandHandler from './serverCommands.js';
+import util from "./util.js";
 
 const log = require("log4js").getLogger();
 const bot = new Discord.Client();
@@ -95,8 +90,8 @@ bot.on('message', msg => {
 bot.login(TOKEN).then(s => {
     util.loadAllGames(f => {
         log.info(`Restoring ${f}`)
-        domGame.loadGame(f, bot, game => {
-            domGame.hostGame(game);
+        loadGame(f, bot, game => {
+            hostGame(game);
             dominionsStatus.startWatches(game);
             if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
                 log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);

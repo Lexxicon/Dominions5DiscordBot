@@ -1,11 +1,10 @@
 const log = require("log4js").getLogger();
 
-import Discord from 'discord.js';
+import Discord, { Message, Snowflake } from 'discord.js';
 import fs from 'fs';
 import _ from 'lodash';
-
-import CONSTANTS from './constants.js';
-import domGame from './dominionsGame.js';
+import { AI_DIFFICULTY, PLAYER_STATUS, TURN_STATE } from './constants.js';
+import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './dominionsGame.js';
 import util from './util.js';
 
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
@@ -59,10 +58,10 @@ function parseLines(lines) : GameState{
                 pretenderId: Number(groups.PRETENDER_ID),
                 stringId: groups.STRING_ID,
                 aiDifficulty: Number(groups.AI_DIFFICULTY),
-                playerStatus: CONSTANTS.PLAYER_STATUS[groups.PLAYER_STATUS],
+                playerStatus: PLAYER_STATUS[groups.PLAYER_STATUS],
                 name: groups.NAME,
                 title: groups.TITLE,
-                turnState: CONSTANTS.TURN_STATE[groups.TURN_STATE],
+                turnState: TURN_STATE[groups.TURN_STATE],
             });
         }else if(STATUS_REGEX.test(line)){
             gameState.name = line.match(STATUS_REGEX).groups.GAME_NAME;
@@ -82,7 +81,7 @@ function parseLines(lines) : GameState{
     return gameState;
 }
 
-function createEmbeddedGameState(game, gameState, staleNations){
+function createEmbeddedGameState(game: Game, gameState: GameState, staleNations: Snowflake[]){
     const fields: {name: string, value: string, inline: boolean}[] = [];
     let activeNames: string[] = [];
     let activePlayers: string[] = [];
@@ -104,7 +103,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
         let playerName = "";
 
         if(s.aiDifficulty > 0){
-            playerName = CONSTANTS.AI_DIFFICULTY[s.aiDifficulty];
+            playerName = AI_DIFFICULTY[s.aiDifficulty];
             activePlayerCount++;
         }else{
             playerName = game.getDisplayName(s.nationId);
@@ -135,7 +134,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
             }
         }else {
             if(s.playerStatus.id == 1){
-                if(game.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
+                if(game.state.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
                     state = "Stale";
                 }else{
                     state = s.turnState.display;
@@ -206,7 +205,7 @@ function createEmbeddedGameState(game, gameState, staleNations){
     return embeddedMessage;
 }
 
-function read(path, cb){
+function read(path: string, cb){
     log.info('reading ' + path)
     fs.readFile(path, 'utf8', (err, data) => {
         if(err){
@@ -217,7 +216,7 @@ function read(path, cb){
     });
 }
 
-function bindUpdateGameStatus(msg, filePath, game){
+function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
     return () => {
         log.info(`updating ${game.name}`);
         read(filePath, (lines) => {
@@ -234,22 +233,22 @@ function bindUpdateGameStatus(msg, filePath, game){
                     if(game.settings.turns.maxTurnTime){
                         game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
                     }
-                    domGame.pingPlayers(game, `Start of turn ${game.state.turn}`,
+                    pingPlayers(game, `Start of turn ${game.state.turn}`,
                         (m) => {
-                            domGame.saveGame(game);
+                            saveGame(game);
                             setTimeout(() => util.backupGame(game.name), 10000);
                         });
                 }
                 msg.edit(createEmbeddedGameState(game, currentTurnState, staleNations));
                 game.playerStatus = currentTurnState.playerStatus;
-                domGame.saveGame(game);
+                saveGame(game);
 
                 if(!blockingNotifications[game.name]){
                     let blockPingTime = new Date(game.state.nextTurnStartTime);
-                    blockPingTime.addHours(-12);
+                    blockPingTime.addHours(-Math.ceil(game.settings.turns.maxTurnTime / 4));
                     let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
                     if(timeTillPing > 0){
-                        blockingNotifications[game.name] = setTimeout(() => domGame.pingBlockingPlayers(game), timeTillPing);
+                        blockingNotifications[game.name] = setTimeout(() => pingBlockingPlayers(game), timeTillPing);
                     }
                 }
 
@@ -262,7 +261,7 @@ function bindUpdateGameStatus(msg, filePath, game){
     }
 }
 
-function watchStatusFile(filePath, game){
+function watchStatusFile(filePath: string, game: Game){
     log.info(`Setting up watch for ${game.name}`);
     game.getChannel(c => {
         c.messages.fetch(game.discord.turnStateMessageId)
@@ -275,7 +274,7 @@ function watchStatusFile(filePath, game){
     });
 }
 
-function startWatches(game) {
+function startWatches(game: Game) {
     log.info(`Starting watches on ${game.name}`)
     const filePath = `${process.env.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
@@ -285,12 +284,11 @@ function startWatches(game) {
                 const embeddedMessage = createEmbeddedGameState(game, parseLines(lines), staleNations);
                 game.getChannel(c => {
                     if(!game.discord.turnStateMessageId){
-                        game.discord.turnStateMessageId = -1;
                         c.send(embeddedMessage)
                             .then(msg => {
                                 msg.pin();
                                 game.discord.turnStateMessageId = msg.id;
-                                domGame.saveGame(game);
+                                saveGame(game);
                                 watchStatusFile(filePath, game);
                             });
                     }

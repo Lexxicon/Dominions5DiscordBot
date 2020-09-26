@@ -2,13 +2,17 @@ const log = require("log4js").getLogger();
 
 import util from './util.js';
 import status from './dominionsStatus.js';
-import domGame from './dominionsGame.js';
-import { Message } from 'discord.js';
+import { Guild, Message } from 'discord.js';
+import { create, hostGame } from './dominionsGame.js';
+
+if(!process.env.DEFAULT_GAMES_CATEGORY_NAME){
+    throw `Missing DEFAULT_GAMES_CATEGORY_NAME config`
+}
 
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
-function createChannel(guild, name, reason, cb){
+function createChannel(guild: Guild, name: string, reason: string, cb){
     name = name.toLowerCase();
     log.info('create ' + name);
     if (name === LOBBY_NAME) {
@@ -24,7 +28,7 @@ function createChannel(guild, name, reason, cb){
     const category = util.findChannel(guild, GAMES_CATEGORY_NAME);
     guild.channels.create(name, {
         type: 'text',
-        parent: category.id,
+        parent: category?.id,
         reason: reason
     })
     .then(cb)
@@ -63,7 +67,7 @@ function createNewGame(msg, era){
     log.info(`Creating channel`);
     createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`, (c) => {
         log.info(`Creating game`);
-        let game = domGame.create(c, gameName, msg.client);
+        let game = create(c, gameName, msg.client);
 
         if(era) game.settings.setup.era = era;
         game.discord.gameLobbyChannelId = c.id;
@@ -78,7 +82,7 @@ function createNewGame(msg, era){
             log.info(`Saving game`);
             util.saveJSON(game.name, game);
             log.info(`Hosting game`);
-            domGame.hostGame(game);
+            hostGame(game);
             setTimeout(() => {
                 log.info(`Watching game`);
                 status.startWatches(game);

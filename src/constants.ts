@@ -1,6 +1,5 @@
 
-export = {
-    EMOJI: {
+export const EMOJI = {
         ":thumbsup:":   "👍",
         ":thumbsdown:":  "👎",
         ":robot:":      "🤖",
@@ -18,22 +17,22 @@ export = {
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
         ":thinking:":   "🤔",
-    },
-    ERA: {
+    };
+export const ERA = {
         "EARLY": ["--era","1"],
         "MIDDLE": ["--era","2"],
         "LATE": ["--era","3"]
-    },
-    STORY_EVENTS: {
+    };
+export const STORY_EVENTS = {
         "NONE": "--nostoryevents",
         "SOME": "--storyevents",
         "ALL": "--allstoryevents"
-    },
-    EVENTS: {
+    }
+export const EVENTS = {
         "COMMON": ["--eventrarity","1"],
         "RARE": ["--eventrarity","2"]
-    },
-    SLOTS: {
+    }
+export const SLOTS = {
         "BANNED": "--closed",
         "EASY": "--easyai",
         "NORMAL": "--normai",
@@ -41,13 +40,13 @@ export = {
         "MIGHTY": "--mightyai",
         "MASTER": "--masterai",
         "IMPOSSIBLE": "--impai"
-    },
-    SIMPLE_RAND_MAP: {
+    };
+export const SIMPLE_RAND_MAP = {
         "SMALL": ["--randmap", "10", "--vwrap"],
         "MEDIUM": ["--randmap", "15", "--vwrap"],
         "LARGE": ["--randmap", "20", "--vwrap"]
-    },
-    PLAYER_STATUS: {
+    };
+export const PLAYER_STATUS = {
         "-2": {
             id: -2,
             canBlock: false,
@@ -73,8 +72,8 @@ export = {
             canBlock: false,
             display: "AI"
         }
-    },
-    AI_DIFFICULTY: {
+    };
+export const AI_DIFFICULTY = {
         "0" : "Human",
         "1" : "[bot] Easy",
         "2" : "[bot] Normal",
@@ -82,8 +81,8 @@ export = {
         "4" : "[bot] Mighty",
         "5" : "[bot] Master",
         "6" : "[bot] Impossible"
-    },
-    TURN_STATE: {
+    };
+export const TURN_STATE = {
         "0": {
             id: 0,
             ready: false,
@@ -104,6 +103,4 @@ export = {
             ready: false,
             display: "-"
         }
-    }
-
-}
+    };

@@ -1,4 +1,5 @@
 
+import { Guild } from "discord.js";
 import fs from "fs";
 import _ from "lodash";
 
@@ -18,7 +19,7 @@ for(let k in EMOJI){
 fs.mkdirSync(`${process.env.BOT_SAVE_PATH}`, {recursive: true});
 fs.mkdirSync(`${process.env.BOT_ARCHIVE_PATH}`, {recursive: true});
 
-function domcmd (commands, game, cb: {(): void} | null = null) {
+function domcmd (commands: string, game, cb?: () =>void) {
     const path = `${process.env.DOMINION_SAVE_PATH}${game.name}/domcmd`;
     fs.writeFile(path, commands, (err) => {
         if(err && game.discord.channel) {
@@ -32,21 +33,21 @@ function domcmd (commands, game, cb: {(): void} | null = null) {
     });
 }
 
-function emoji(input){
+function emoji(input: string){
     for(let k in EMOJI){
         input = input.replace(EMOJI_REGEX[k], EMOJI[k]);
     }
     return input;
 }
 
-function saveJSON(name, data){
+function saveJSON(name: string, data: any){
     fs.writeFile(`${process.env.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data), 'utf8', err => {
         if(err) throw err;
         log.info(`Saved ${name}`);
     });
 }
 
-function loadJSON(name, cb){
+function loadJSON(name: string, cb: (data: any, err?: Error) => void){
     name = name.endsWith('.json') ? name : `${name}.json`;
     log.info(`loading ${name}`);
     fs.readFile(`${process.env.BOT_SAVE_PATH}${name}`, 'utf8', (err, data) => {
@@ -67,7 +68,7 @@ function loadJSON(name, cb){
     });
 }
 
-function backupGame(name){
+function backupGame(name: string){
     const path = `${process.env.BOT_ARCHIVE_PATH}${name}`;
 
     let backupActions: any[] = [];
@@ -113,11 +114,11 @@ function backupGame(name){
     callback(null);
 }
 
-function printError (error, explicit) {
+function printError (error: Error, explicit: boolean) {
     log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}`);
 }
 
-function deleteJSON(name) {
+function deleteJSON(name: string) {
     fs.unlink(`${process.env.BOT_SAVE_PATH}${name}.json`, (err) => log.error(err));
 }
 
@@ -126,7 +127,7 @@ function deleteGameSave(game) {
     fs.rmdir(path, {recursive: true}, (err) => {if(err) { log.error(err)}});
 }
 
-function loadAllGames(cb){
+function loadAllGames(cb: (gameFile: string)=>void){
     fs.readdir(`${process.env.BOT_SAVE_PATH}`, (e, items)=>{
         if(e) {
             throw e;
@@ -135,7 +136,7 @@ function loadAllGames(cb){
     });
 }
 
-function randomValue(array){
+function randomValue<T>(array: T[]): T{
     return array[Math.floor(Math.random() * array.length)];
 }
 
@@ -149,7 +150,7 @@ function generateName(){
     throw 'Failed to create valid name after 30 tries';
 }
 
-function getSeconds(str) {
+function getSeconds(str: string) {
     let seconds = 0;
     let days = str.match(/(\d+)\s*d/);
     let hours = str.match(/(\d+)\s*h/);
@@ -160,16 +161,16 @@ function getSeconds(str) {
     return seconds;
 }
 
-function getAvailableMods(cb){
+function getAvailableMods(cb: (files: string[]) => void){
     return fs.readdir(`${process.env.DOMINION_MODS_PATH}`, 
     (err, files) => cb(files.filter(f => f.endsWith(".dm"))));
 }
 
-function getStaleNations(game, cb) {
+function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
     let stales : string[] = [];
     let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
     if(game.turns < 2) {
-        cb(stales);
+        cb(null, stales);
         return;
     }
 
@@ -211,11 +212,11 @@ function getStaleNations(game, cb) {
 }
 
 export = {
-    findChannel: function (guild, name) {
+    findChannel: function (guild: Guild, name: string) {
         return guild.channels.cache.find(c => c.name === name);
     },
     domcmd: {
-        startGame: function(game, seconds = 15, cb = null){
+        startGame: function(game, seconds = 15, cb?: () => void){
             domcmd(`settimeleft ${seconds}`, game, cb);
         }
     },
