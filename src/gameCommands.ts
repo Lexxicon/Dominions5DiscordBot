@@ -72,7 +72,7 @@ function delayTurn(msg, game, arg) {
 
     let seconds = util.getSeconds(arg);
 
-    game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime + (seconds * 1000));
+    game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime.getTime() + (seconds * 1000));
     log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
     util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
 

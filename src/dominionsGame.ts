@@ -7,6 +7,35 @@ import {spawn} from 'child_process';
 
 import CONSTANTS from "./constants.js";
 import util from './util.js';
+import { Client, GuildChannel } from "discord.js";
+
+// export class TurnState {
+//     turn: Number = -1;
+//     nextTurnStartTime: Number = 0;
+//     notifiedBlockers: boolean = false;
+// }
+
+// export class Game {
+//     name: String;
+//     playerCount = 0;
+//     state = new TurnState();
+
+//     discord;
+
+//     constructor(channel: GuildChannel, name: String, bot: Client){
+//         this.name = name;
+//         this.discord = {
+//             channelId: channel.id,
+//             gameLobbyChannelId: null,
+//             turnStateMessageId: null,
+//             pingMessageId: null,
+//             playerRoleId: null,
+//             players:{
+//                 //playerId : nationId
+//             }
+//         }
+//     }
+// }
 
 const ports = {};
 _.forEach(require('parse-numeric-range')(process.env.PORTS), p => ports[p] = null);
@@ -132,7 +161,7 @@ function pingBlockingPlayers(game) {
             }
 
             let playerIDs = blockingNations.map(game.getPlayerForNation);
-            let ping = playerIDs.map(id => `<@&${id}>`).join(' ');
+            let ping = playerIDs.map(id => `<@${id}>`).join(' ');
 
             let hoursTillHost = Math.floor( (game.state.nextTurnStartTime.getSecondsFromNow() / 60 ) / 60);
 
