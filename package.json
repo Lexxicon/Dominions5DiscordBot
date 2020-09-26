@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "start": "tsc && node build/index.js"
   },
   "author": "Lexxicon",
   "license": "ISC",
