@@ -5,11 +5,7 @@ import status from './dominionsStatus.js';
 import { Guild, Message } from 'discord.js';
 import { create, hostGame } from './dominionsGame.js';
 
-if(!process.env.DEFAULT_GAMES_CATEGORY_NAME){
-    throw `Missing DEFAULT_GAMES_CATEGORY_NAME config`
-}
-
-const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME;
+const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME!;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
 function createChannel(guild: Guild, name: string, reason: string, cb){

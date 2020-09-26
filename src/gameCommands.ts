@@ -1,6 +1,6 @@
 const log = require("log4js").getLogger();
 
-import { SIMPLE_RAND_MAP } from './constants.js';
+import * as constants from './constants.js';
 import { deleteGame, Game, getGames, hostGame, saveGame, stopGame } from "./dominionsGame.js";
 import util from './util.js';
 
@@ -93,7 +93,7 @@ function startGame(msg, game: Game, arg) {
         return -1;
     }
     let playerCount = game.playerCount;
-    let provPerPlayer = SIMPLE_RAND_MAP[game.settings.setup.map][1];
+    let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
     log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
     let provinces = playerCount * provPerPlayer;
     log.info("provinces " + provinces);

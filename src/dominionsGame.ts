@@ -5,7 +5,7 @@ import { Channel, Client, GuildChannel, Snowflake } from "discord.js";
 import EventEmitter from 'events';
 import _, { Dictionary, NumericDictionary } from "lodash";
 import { Stream } from "stream";
-import { ERA, EVENTS, SIMPLE_RAND_MAP, SLOTS, STORY_EVENTS } from './constants.js';
+import * as constants from './constants.js';
 import util from './util.js';
 
 
@@ -467,8 +467,8 @@ function getLaunchArgs(config: Game){
         args.push("--cataclysm");
         args.push(setup.cataclysm);
     }
-    if(SIMPLE_RAND_MAP[setup.map]){
-        args = args.concat(SIMPLE_RAND_MAP[setup.map]);
+    if(constants.SIMPLE_RAND_MAP[setup.map]){
+        args = args.concat(constants.SIMPLE_RAND_MAP[setup.map]);
     }else{
         args.push("--mapfile");
         args.push(setup.map);
@@ -478,12 +478,12 @@ function getLaunchArgs(config: Game){
     }else{
         args.push("--nomods");
     }
-    args = args.concat(ERA[setup.era]);
-    args = args.concat(EVENTS[setup.eventRarity]);
+    args = args.concat(constants.ERA[setup.era]);
+    args = args.concat(constants.EVENTS[setup.eventRarity]);
 
-    args.push(STORY_EVENTS[setup.storyEvents]);
+    args.push(constants.STORY_EVENTS[setup.storyEvents]);
     for(let k in setup.slots){
-        args.push(SLOTS[setup.slots[k]])
+        args.push(constants.SLOTS[setup.slots[k]])
         args.push(k);
     }
     args.push(config.name);

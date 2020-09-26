@@ -3,7 +3,7 @@ const log = require("log4js").getLogger();
 import Discord, { Message, Snowflake } from 'discord.js';
 import fs from 'fs';
 import _ from 'lodash';
-import { AI_DIFFICULTY, PLAYER_STATUS, TURN_STATE } from './constants.js';
+import * as constants from './constants.js';
 import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './dominionsGame.js';
 import util from './util.js';
 
@@ -58,10 +58,10 @@ function parseLines(lines) : GameState{
                 pretenderId: Number(groups.PRETENDER_ID),
                 stringId: groups.STRING_ID,
                 aiDifficulty: Number(groups.AI_DIFFICULTY),
-                playerStatus: PLAYER_STATUS[groups.PLAYER_STATUS],
+                playerStatus: constants.PLAYER_STATUS[groups.PLAYER_STATUS],
                 name: groups.NAME,
                 title: groups.TITLE,
-                turnState: TURN_STATE[groups.TURN_STATE],
+                turnState: constants.TURN_STATE[groups.TURN_STATE],
             });
         }else if(STATUS_REGEX.test(line)){
             gameState.name = line.match(STATUS_REGEX).groups.GAME_NAME;
@@ -103,7 +103,7 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
         let playerName = "";
 
         if(s.aiDifficulty > 0){
-            playerName = AI_DIFFICULTY[s.aiDifficulty];
+            playerName = constants.AI_DIFFICULTY[s.aiDifficulty];
             activePlayerCount++;
         }else{
             playerName = game.getDisplayName(s.nationId);

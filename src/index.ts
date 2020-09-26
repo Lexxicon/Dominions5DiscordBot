@@ -1,23 +1,30 @@
 require('dotenv').config();
+require('source-map-support').install();
 require('./prototypes.js');
+const log = require("log4js").getLogger();
+
+require('./validateEnv.js');
+
+log.info(``);
+log.info(`-------------- Application Starting ${new Date()} --------------`);
+log.info(``);
+
 
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
 import { hostGame, loadGame } from './dominionsGame.js';
 import dominionsStatus from "./dominionsStatus.js";
 import gameCommandHandler from './gameCommands.js';
 import lobbyCommandHandler from './lobbyCommands.js';
-import logging from './logger.js';
 import serverCommandHandler from './serverCommands.js';
 import util from "./util.js";
 
-const log = require("log4js").getLogger();
+
 const bot = new Discord.Client();
 const TOKEN = process.env.TOKEN;;
 const LOBBY_NAME = process.env.DEFAULT_LOBBY_NAME;
 
 function cleanup(){
     log.info('Goodbye');
-    logging.shutdown();
 }
 
 // do app specific cleaning before exiting

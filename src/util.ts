@@ -2,17 +2,16 @@
 import { Guild } from "discord.js";
 import fs from "fs";
 import _ from "lodash";
-
+import * as constants from './constants.js';
 const log = require("log4js").getLogger();
 
-const config = require("../res/config.json");
+const config = require('../res/config.json');
 
 const ncp = require('ncp').ncp;
-const EMOJI = require('./constants.js').EMOJI;
 
 const EMOJI_REGEX = {};
 
-for(let k in EMOJI){
+for(let k in constants.EMOJI){
     EMOJI_REGEX[k] = new RegExp(_.escapeRegExp(k), 'gi')
 }
 
@@ -34,16 +33,19 @@ function domcmd (commands: string, game, cb?: () =>void) {
 }
 
 function emoji(input: string){
-    for(let k in EMOJI){
-        input = input.replace(EMOJI_REGEX[k], EMOJI[k]);
+    for(let k in constants.EMOJI){
+        input = input.replace(EMOJI_REGEX[k], constants.EMOJI[k]);
     }
     return input;
 }
 
 function saveJSON(name: string, data: any){
     fs.writeFile(`${process.env.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data), 'utf8', err => {
-        if(err) throw err;
-        log.info(`Saved ${name}`);
+        if(err) {
+            log.error(err);
+        }else{
+            log.info(`Saved ${name}`);
+        }
     });
 }
 
