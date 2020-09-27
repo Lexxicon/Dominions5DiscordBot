@@ -188,7 +188,7 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
         }
         if(game.state.nextTurnStartTime){
             desc.push(`Auto Host at: ${game.state.nextTurnStartTime}`);
-
+            
             let hoursTillHost = Math.floor( (game.state.nextTurnStartTime.getSecondsFromNow() / 60 ) / 60);           
             desc.push(`Next turn starts in ${hoursTillHost} hours!`);
         }
@@ -232,6 +232,8 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
                     game.state.notifiedBlockers = false;
                     if(game.settings.turns.maxTurnTime){
                         game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
+                    }else{
+                        game.state.nextTurnStartTime = new Date().addMinutes(game.settings.turns.maxTurnTimeMinutes);
                     }
                     pingPlayers(game, `Start of turn ${game.state.turn}`,
                         (m) => {
@@ -245,8 +247,13 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
 
                 if(!blockingNotifications[game.name]){
                     let blockPingTime = new Date(game.state.nextTurnStartTime);
-                    blockPingTime.addHours(-Math.ceil(game.settings.turns.maxTurnTime / 4));
+                    if(game.settings.turns.maxTurnTime){
+                        blockPingTime.addHours(-Math.ceil(game.settings.turns.maxTurnTime / 4));
+                    }else{
+                        blockPingTime.addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
+                    }
                     let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
+                    log.info(`Scheduling ping for ${blockPingTime}`);
                     if(timeTillPing > 0){
                         blockingNotifications[game.name] = setTimeout(() => pingBlockingPlayers(game), timeTillPing);
                     }

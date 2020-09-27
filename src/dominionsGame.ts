@@ -3,10 +3,12 @@ const log = require("log4js").getLogger();
 import { ChildProcess, spawn } from 'child_process';
 import { Channel, Client, GuildChannel, Snowflake } from "discord.js";
 import EventEmitter from 'events';
+import { WriteStream } from 'fs';
 import _, { Dictionary, NumericDictionary } from "lodash";
-import { Stream } from "stream";
+import { Readable, Stream } from "stream";
 import * as constants from './constants.js';
 import util from './util.js';
+import fs from 'fs';
 
 
 export class Game {
@@ -24,7 +26,8 @@ export class Game {
         },
         turns: {
             quickHost: true,
-            maxTurnTime: 48
+            maxTurnTime: 48 as number | undefined,
+            maxTurnTimeMinutes: 2880
         },
         setup: {
             masterPass: Math.random().toString(36).substring(2, 15),
@@ -43,7 +46,6 @@ export class Game {
         channelId: "" as Snowflake,
         gameLobbyChannelId: null as Snowflake | null,
         turnStateMessageId: null as Snowflake | null,
-        pingMessageId: null as Snowflake | null,
         playerRoleId: null as Snowflake | null,
         players:{} as Dictionary<string> //playerId : nationId
     };
@@ -64,7 +66,6 @@ export class Game {
             channelId: channel.id,
             gameLobbyChannelId: null,
             turnStateMessageId: null,
-            pingMessageId: null,
             playerRoleId: null,
             players:{
                 //playerId : nationId
@@ -108,7 +109,8 @@ function create(channel: GuildChannel, name: string, bot: Client){
             },
             turns:{
                 quickHost: true,
-                maxTurnTime: 48
+                maxTurnTime: undefined,
+                maxTurnTimeMinutes: 2880
             },
             setup: {
                 masterPass: Math.random().toString(36).substring(2, 15),
@@ -116,13 +118,7 @@ function create(channel: GuildChannel, name: string, bot: Client){
                 storyEvents: 'ALL', //[NONE, SOME, ALL]
                 eventRarity: 'COMMON', // [common=1, rare=2]
                 map: 'MEDIUM', // [SMALL, MEDIUM, LARGE] or name of actual map
-                slots: { //nationID: difficulty
-                    // 8: 'DIFFICULT', //--diffai
-                    // 9: 'MIGHTY', //--mightyai
-                    // 10: 'MASTER', //--masterai
-                    // 11: 'IMPOSSIBLE', //--impai
-                    // 12: 'BANNED' //--closed
-                },
+                slots: {},
                 thrones: [5, 3, 2],
                 victoryPoints: 8,
                 cataclysm: 72,
@@ -133,7 +129,6 @@ function create(channel: GuildChannel, name: string, bot: Client){
             channelId: channel.id,
             gameLobbyChannelId: null,
             turnStateMessageId: null,
-            pingMessageId: null,
             playerRoleId: null,
             players:{
                 //playerId : nationId
@@ -153,12 +148,6 @@ function pingPlayers(game: Game, msg: string, cb){
         game.getChannel(channel => {
             channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
                 .then(m => {
-                    if(game.discord.pingMessageId){
-                        channel.messages
-                        .delete(game.discord.pingMessageId)
-                        .catch(log.error);
-                    }
-                    game.discord.pingMessageId = m.id;
                     cb(m);
                 })
                 .catch(log.error);
@@ -209,14 +198,16 @@ function pingBlockingPlayers(game: Game) {
     });
 }
 
-function handleStreamLines(outStream: Stream, handler){
+function handleStreamLines(outStream: Readable, handler){
     const emitter = new EventEmitter.EventEmitter();
 
     let buffer = "";
     let lastEmit : Object[] = [];
-
+    
     outStream
+        .setEncoding('utf-8')
         .on('data', data => {
+            log.debug(`${data}`);
             buffer += data;
             let lines = buffer.split(/[\r\n|\n]/);
             buffer = lines.pop() || '';
@@ -238,7 +229,6 @@ function handleStreamLines(outStream: Stream, handler){
 
 function hostGame(game: Game){
     log.info(`hosting: ${game.name}`);
-    log.debug(`hosting right version? ${games[game.name] === game}`);
     if(!game.settings.server.port){
         let port = _.findKey(ports, p => p === null);
         if(port){
@@ -262,16 +252,15 @@ function hostGame(game: Game){
 
     const args = getLaunchArgs(game);
     log.info(`Spawning Host: ${process.env.DOMINION_EXEC_PATH } ${args}`)
-    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args);
 
-    child.stdout.setEncoding('utf-8');
+    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args, { stdio: 'pipe' });
     handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
-
-    child.stderr.setEncoding('utf-8');
     handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
     
     ports[game.settings.server.port] = game;
-
+    child.on('error', (er) => {
+        log.error(`child error ${er}`);
+    })
     child.on('exit', (code, sig) => {
         delete game.getProcess;
         if(ports[game.settings.server.port!] === game){
@@ -452,7 +441,11 @@ function getLaunchArgs(config: Game){
     if(turns.maxTurnTime) {
         args.push("--hours");
         args.push(turns.maxTurnTime);
+    }else if(turns.maxTurnTimeMinutes > 0){
+        args.push("--minutes");
+        args.push(turns.maxTurnTimeMinutes);
     }
+
 
     //new game settings
     args.push("--noclientstart");

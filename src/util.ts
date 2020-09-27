@@ -117,7 +117,7 @@ function backupGame(name: string){
 }
 
 function printError (error: Error, explicit: boolean) {
-    log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}`);
+    log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}, ${error.stack}`);
 }
 
 function deleteJSON(name: string) {
@@ -153,13 +153,16 @@ function generateName(){
 }
 
 function getSeconds(str: string) {
+    if(str.startsWith('-')) throw `Negative times aren't allowed! ${str}`
     let seconds = 0;
     let days = str.match(/(\d+)\s*d/);
     let hours = str.match(/(\d+)\s*h/);
     let minutes = str.match(/(\d+)\s*m/);
+    let rawSeconds = str.match(/(\d+)\s*s/);
     if (days) { seconds += parseInt(days[1])*86400; }
     if (hours) { seconds += parseInt(hours[1])*3600; }
     if (minutes) { seconds += parseInt(minutes[1])*60; }
+    if (rawSeconds) { seconds += parseInt(rawSeconds[1]); }
     return seconds;
 }
 
@@ -171,7 +174,7 @@ function getAvailableMods(cb: (files: string[]) => void){
 function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
     let stales : string[] = [];
     let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
-    if(game.turns < 2) {
+    if(game.state.turn < 2) {
         cb(null, stales);
         return;
     }
@@ -210,6 +213,8 @@ function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
                 }
             })
         });
+    }else{
+        cb(null, stales);
     }
 }
 

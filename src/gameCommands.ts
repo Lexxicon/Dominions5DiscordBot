@@ -34,7 +34,6 @@ function joinUser(msg, game: Game, nationID){
             }, 1000);
             game.save();
         }else {
-            //invalid race id
             msg.channel.send(`Invalid race for given era! era: ${game.settings.setup.era}, nationID: ${nationID}`)
             return -1;
         }
@@ -129,6 +128,7 @@ function forceTurn(msg, game: Game, arg: string){
     if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
         return -1;
     }
+    log.debug(`forcing turn with arg ${arg}`)
     let time = util.getSeconds(arg || '15s');
     game.state.nextTurnStartTime = new Date(Date.now() + time * 1000)
     util.domcmd.startGame({name: game.name}, time);
