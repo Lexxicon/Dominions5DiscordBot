@@ -19,12 +19,12 @@ export function checkPermission(member: GuildMember, neededPermission: Permissio
 
         case Permission.ANY: return true;
         case Permission.PLAYER:
-            if(game && game.discord.playerRoleId && member?.roles.resolve(game.discord.playerRoleId) !== null){
+            if(game && game.discord.playerRoleId && member.roles.cache.find( role => role.id == game.discord.playerRoleId) !== null){
                 return true;
             }
             //fall through
         case Permission.GAME_ADMIN:
-            if(game && game.discord.adminRoleId && member?.roles.resolve(game.discord.adminRoleId) !== null){
+            if(game && game.discord.adminRoleId && member.roles.cache.find( role => role.id == game.discord.adminRoleId) !== null){
                 return true;
             }
             //fall through
