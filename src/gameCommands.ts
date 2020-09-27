@@ -195,11 +195,11 @@ function changeGameSettings(msg, game: Game, arg){
                 let settingsPath = args[1].split('.');
                 log.debug(`split path ${settingsPath}`);
                 let settings = game;
-                for(let p of settingsPath){
-                    settings = settings[p];
+                for(let i = 0; i < settingsPath.length - 1; i++){
+                    settings = settings[settingsPath[i]];
                 }
                 log.debug(`Result settings: ${settings}`);
-                settings = args[2];
+                settings[settingsPath[settingsPath.length - 1]] = args[2];
                 saveGame(game);
                 return 0;
             }

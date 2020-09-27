@@ -35,11 +35,12 @@ export class Game {
             storyEvents: 'ALL' as StoryEventLevel,
             eventRarity: 'COMMON' as EventRarity,
             map: 'MEDIUM' as MapOptions | string,
+            disciples: false,
             slots: {} as Dictionary<SlotOptions>,
             thrones: [5, 3, 2],
             victoryPoints: 8,
             cataclysm: 72,
-            mods: [] as string[]
+            mods: [] as string[],
         }
     };
     discord = {
@@ -118,6 +119,7 @@ function create(channel: GuildChannel, name: string, bot: Client){
                 storyEvents: 'ALL', //[NONE, SOME, ALL]
                 eventRarity: 'COMMON', // [common=1, rare=2]
                 map: 'MEDIUM', // [SMALL, MEDIUM, LARGE] or name of actual map
+                disciples: false,
                 slots: {},
                 thrones: [5, 3, 2],
                 victoryPoints: 8,
@@ -444,7 +446,6 @@ function getLaunchArgs(config: Game){
         args.push(turns.maxTurnTimeMinutes);
     }
 
-
     //new game settings
     args.push("--noclientstart");
     args.push("--masterpass");
@@ -468,6 +469,9 @@ function getLaunchArgs(config: Game){
         setup.mods.forEach(mod => args.push("--enablemod", mod));
     }else{
         args.push("--nomods");
+    }
+    if(setup.disciples){
+        args.push("--teamgame");
     }
     args = args.concat(constants.ERA[setup.era]);
     args = args.concat(constants.EVENTS[setup.eventRarity]);
