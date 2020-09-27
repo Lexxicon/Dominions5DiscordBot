@@ -207,7 +207,6 @@ function handleStreamLines(outStream: Readable, handler){
     outStream
         .setEncoding('utf-8')
         .on('data', data => {
-            log.debug(`${data}`);
             buffer += data;
             let lines = buffer.split(/[\r\n|\n]/);
             buffer = lines.pop() || '';
@@ -218,7 +217,6 @@ function handleStreamLines(outStream: Readable, handler){
         });
     
     emitter.on('line', data => {
-        log.debug(`${data}`);
         if(!lastEmit.includes(data)){
             lastEmit.unshift(data);
             lastEmit = lastEmit.slice(0, 3);
