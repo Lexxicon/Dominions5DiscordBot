@@ -263,11 +263,18 @@ function hostGame(game: Game) {
     child.on('error', (er) => {
         log.error(`child error ${er}`);
     })
+    
+    const updateInterval = setInterval(() => {
+        if(game.update){
+            game.update();
+        }
+    }, 1000 * 60 * 15);
     child.on('exit', (code, sig) => {
         delete game.getProcess;
         if (ports[game.settings.server.port!] === game) {
             ports[game.settings.server.port!] = null;
         }
+        clearInterval(updateInterval);
     });
     log.debug(`binding process on ${game.name} to ${child} ${child.pid}`);
     game.getProcess = () => child;
