@@ -1,14 +1,16 @@
-const log = require("log4js").getLogger();
+
 
 import { ChildProcess, spawn } from 'child_process';
 import { Channel, Client, GuildChannel, Snowflake } from "discord.js";
 import EventEmitter from 'events';
 import _, { Dictionary, NumericDictionary } from "lodash";
+import { getLogger } from 'log4js';
 import { Readable } from "stream";
 import * as constants from './constants.js';
 import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global.js';
 import util from './util.js';
 
+const log = getLogger();
 
 export class Game {
     name: string;
@@ -266,7 +268,11 @@ function hostGame(game: Game) {
     
     const updateInterval = setInterval(() => {
         if(game.update){
-            game.update();
+            try{
+                game.update();
+            }catch(err){
+                log.error(`Error updating game ${game.name} ${err}`);
+            }
         }
     }, 1000 * 60 * 15);
     child.on('exit', (code, sig) => {
