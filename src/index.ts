@@ -14,6 +14,7 @@ import Discord, { NewsChannel, TextChannel } from 'discord.js';
 import { hostGame, loadGame } from './dominionsGame.js';
 import dominionsStatus from "./dominionsStatus.js";
 import gameCommandHandler from './gameCommands.js';
+import { GuildMessage } from './global.js';
 import lobbyCommandHandler from './lobbyCommands.js';
 import serverCommandHandler from './serverCommands.js';
 import util from "./util.js";
@@ -53,8 +54,9 @@ bot.on('ready', () => {
 
 
 bot.on('message', msg => {
-    if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel)){
-        let handler;
+    if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel) && util.isGuildMessage(msg)){
+
+        let handler: (msg: GuildMessage)=> number;
         log.info(msg.channel.name);
         if (msg.channel.name == LOBBY_NAME) {
             log.info("Handling lobby command");

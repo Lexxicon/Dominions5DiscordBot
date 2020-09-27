@@ -4,6 +4,7 @@ import util from './util.js';
 import status from './dominionsStatus.js';
 import { Guild, Message } from 'discord.js';
 import { create, hostGame } from './dominionsGame.js';
+import { Era, GuildMessage } from './global.js';
 
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME!;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
@@ -31,7 +32,7 @@ function createChannel(guild: Guild, name: string, reason: string, cb){
     .catch(log.error);
 }
 
-function deleteChannel(guild, name, reason){
+function deleteChannel(guild: Guild, name: string, reason: string){
     name = name.toLowerCase().replace(' ', '-');
 
     log.info('delete ' + name);
@@ -56,7 +57,7 @@ function deleteChannel(guild, name, reason){
     channel.delete(reason);
 }
 
-function createNewGame(msg, era){
+function createNewGame(msg: GuildMessage, era: any){
     let gameName = util.generateName();
     log.info(`Creating ${gameName}`);
 
@@ -67,14 +68,23 @@ function createNewGame(msg, era){
 
         if(era) game.settings.setup.era = era;
         game.discord.gameLobbyChannelId = c.id;
+        const guild: Guild = msg.guild;
 
-        msg.guild.roles.create({
+        guild.roles.create({
             data: {
                 name:`${gameName}-player`,
                 mentionable: true
             }
         }).then(r => {
             game.discord.playerRoleId = r.id;
+            return msg.guild.roles.create({
+                data: {
+                    name: `${gameName}-admin`,
+                    mentionable: true
+                }
+            })
+        }).then(r => {
+            game.discord.adminRoleId = r.id;
             log.info(`Saving game`);
             util.saveJSON(game.name, game);
             log.info(`Hosting game`);
@@ -93,13 +103,9 @@ function createNewGame(msg, era){
 
 let pingMsgs = {};
 
-function handleCommand(msg: Message){
-    if(!msg.member || !msg.guild){
-        return;
-    }
-
+function handleCommand(msg: GuildMessage): number{
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
-        return;
+        return -1;
     }
     const input = msg.content.substring(1);
 

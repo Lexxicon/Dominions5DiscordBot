@@ -1,8 +1,10 @@
 import { Message } from "discord.js";
+import { getLogger } from "log4js";
+import { GuildMessage } from "./global";
 
-const log = require("log4js").getLogger();
+const log = getLogger();
 
-function initServer(msg:Message){
+function initServer(msg: GuildMessage){
     if(!msg.guild){
         return -1;
     }
@@ -31,7 +33,7 @@ function initServer(msg:Message){
     return 1;
 }
 
-function handleCommand(msg){
+function handleCommand(msg: GuildMessage){
     const input = msg.content.substring(1);
 
     let split = input.indexOf(' ');

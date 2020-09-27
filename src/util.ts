@@ -1,8 +1,9 @@
 
-import { Guild } from "discord.js";
+import { DMChannel, Guild, Message, NewsChannel, TextChannel } from "discord.js";
 import fs from "fs";
 import _ from "lodash";
 import * as constants from './constants.js';
+import { GuildMessage } from "./global.js";
 const log = require("log4js").getLogger();
 
 const config = require('../res/config.json');
@@ -218,6 +219,13 @@ function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
     }
 }
 
+function isGuildMessage(message: Message): message is GuildMessage{
+    if(message.member == null || message.guild == null || !(message.channel instanceof TextChannel || message.channel instanceof NewsChannel)){
+        throw 'Not a guild message!'
+    }
+    return true;
+}
+
 export = {
     findChannel: function (guild: Guild, name: string) {
         return guild.channels.cache.find(c => c.name === name);
@@ -237,5 +245,6 @@ export = {
     getSeconds,
     getAvailableMods,
     getStaleNations,
-    backupGame
+    backupGame,
+    isGuildMessage
 };

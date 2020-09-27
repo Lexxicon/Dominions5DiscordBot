@@ -1,12 +1,12 @@
-const log = require("log4js").getLogger();
-
 import Discord, { Message, Snowflake } from 'discord.js';
 import fs from 'fs';
 import _ from 'lodash';
 import * as constants from './constants.js';
 import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './dominionsGame.js';
 import util from './util.js';
+import log4js from 'log4js';
 
+const log = log4js.getLogger();
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
 const TURN_REGEX = /turn (?<TURN>-?\d+), era (?<ERA>\d+), mods (?<MODS>\d+), turnlimit (?<TURN_LIMIT>\d+)/;
 const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYER_STATUS>\d)\t(?<AI_DIFFICULTY>\d)\t(?<TURN_STATE>\d)\t(?<STRING_ID>\w*)\t(?<NAME>[^\t]*)\t(?<TITLE>[^\t]*)/;
@@ -277,6 +277,9 @@ function watchStatusFile(filePath: string, game: Game){
                 fs.watch(filePath, 'utf8', update);
                 update();
                 game.update = update;
+            })
+            .catch(err => {
+                log.error(err);
             });
     });
 }

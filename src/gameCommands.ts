@@ -1,19 +1,26 @@
 const log = require("log4js").getLogger();
 
+import { GuildMember, Message } from 'discord.js';
 import * as constants from './constants.js';
 import { deleteGame, Game, getGames, hostGame, saveGame, stopGame } from "./dominionsGame.js";
+import { GuildMessage } from './global.js';
+import { checkPermission, Permission } from './permissions.js';
 import util from './util.js';
 
 const races = require("../res/races.json");
 
+function joinUser(msg: GuildMessage, game: Game, nationID:string){
+    checkPermission(msg.member, Permission.ANY, game);
 
-
-function joinUser(msg, game: Game, nationID){
     let roleID = game.discord.playerRoleId;
     if(roleID){
         msg.guild.roles.fetch(roleID)
             .then(role => {
-                msg.member.roles.add(role);
+                if(role){
+                    msg.member!.roles.add(role);
+                }else{
+                    throw `failed to find player role! ${game.name} ${roleID}`
+                }
             });
     }
 
@@ -42,7 +49,9 @@ function joinUser(msg, game: Game, nationID){
     return 0;
 }
 
-function switchUser(msg, game: Game, nationID){
+function switchUser(msg: GuildMessage, game: Game, nationID){
+    checkPermission(msg.member, Permission.PLAYER, game);
+
     if(!game.discord.players[msg.member.id]){
         msg.channel.send(`You haven't joined yet!`);
         return -1;
@@ -63,10 +72,8 @@ function switchUser(msg, game: Game, nationID){
     return 0;
 }
 
-function delayTurn(msg, game: Game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function delayTurn(msg: GuildMessage, game: Game, arg) {
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
     let seconds = util.getSeconds(arg);
 
@@ -79,18 +86,16 @@ function delayTurn(msg, game: Game, arg) {
     return 0;
 }
 
-function deleteGameCmd(msg, game: Game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function deleteGameCmd(msg: GuildMessage, game: Game, arg) {
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
     
     deleteGame(game);
+    return 0;
 }
 
-function startGame(msg, game: Game, arg) {
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function startGame(msg: GuildMessage, game: Game, arg) {
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
+
     let playerCount = game.playerCount;
     let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
     log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
@@ -124,10 +129,9 @@ function startGame(msg, game: Game, arg) {
     return 0;
 }
 
-function forceTurn(msg, game: Game, arg: string){
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function forceTurn(msg: GuildMessage, game: Game, arg: string){
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
+
     log.debug(`forcing turn with arg ${arg}`)
     let time = util.getSeconds(arg || '15s');
     game.state.nextTurnStartTime = new Date(Date.now() + time * 1000)
@@ -136,10 +140,9 @@ function forceTurn(msg, game: Game, arg: string){
     return 0;
 }
 
-function restartGame(msg, game: Game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function restartGame(msg: GuildMessage, game: Game, arg){
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
+
     log.info(`Killing ${game.name} ${game.canary}`);
     let gameProcess = game.getProcess ? game.getProcess() : null;
     stopGame(game);
@@ -153,15 +156,13 @@ function restartGame(msg, game: Game, arg){
         setTimeout(host, 10000);
     }else{
         log.debug("Hooking exit");
-        gameProcess.on('exit', () => setTimeout(host, 100));
+        gameProcess.on('exit', () => setTimeout(host, 1000));
     }
     return 0;
 }
 
-function changeGameSettings(msg, game: Game, arg){
-    if(!msg.member.roles.cache.find(r => r.name === `${process.env.DEFAULT_GAME_MASTER}`)){
-        return -1;
-    }
+function changeGameSettings(msg:GuildMessage, game: Game, arg: string){
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
     let args = arg ? arg.split(' ') : [];
     if(args.length > 0){
@@ -175,11 +176,15 @@ function changeGameSettings(msg, game: Game, arg){
                     return -1;
                 }
                 util.getAvailableMods(f => {
-                    if( f.includes(args[1]) && !game.settings.setup.mods.includes(args[1]))  {
+                    let mod = args.splice(1, args.length - 1).join(' ');
+                    if( f.includes(mod) && !game.settings.setup.mods.includes(mod))  {
                         log.info("added mod!")
-                        game.settings.setup.mods.push(args[1]);
+                        game.settings.setup.mods.push(mod);
                         saveGame(game);
-                        msg.channel.send(`Added Mod: ${args[1]}`);
+                        msg.channel.send(`Added Mod: ${mod}`);
+                    }else {
+                        log.warn(`Failed to add ${mod}`);
+                        return -1;
                     }
                 });
             return 0;
@@ -219,7 +224,7 @@ function changeGameSettings(msg, game: Game, arg){
                 return -1;
         }
     }
-
+    return -1;
 }
 
 function resign(msg, game: Game, arg) {
@@ -244,7 +249,7 @@ function resign(msg, game: Game, arg) {
     return 0;
 }
 
-function handleCommand(msg){
+function handleCommand(msg: GuildMessage): number{
     const input = msg.content.substring(1);
 
     let split = input.indexOf(' ');
