@@ -91,7 +91,7 @@ export const TURN_STATE = {
         "1": {
             id: 1,
             ready: false,
-            display: "Waiting (Partial)"
+            display: "Partial"
         },
         "2": {
             id: 2,
