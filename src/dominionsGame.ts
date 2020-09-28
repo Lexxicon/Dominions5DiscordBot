@@ -204,22 +204,24 @@ function pingBlockingPlayers(game: Game) {
     });
 }
 
-function handleStreamLines(outStream: Readable, handler) {
+function handleStreamLines(outStream: Readable, handler: (line: string) => void) {
     const emitter = new EventEmitter.EventEmitter();
 
-    let buffer = "";
+    let buffer = Buffer.from("");
     let lastEmit: Object[] = [];
 
     outStream
         .setEncoding('utf-8')
         .on('data', data => {
-            buffer += data;
-            let lines = buffer.split(/[\r\n|\n]/);
-            buffer = lines.pop() || '';
+            log.debug(data);
+            buffer.write(data, 'utf-8');
+            let lines = buffer.toString('utf-8').split(/[\r\n|\n]/);
+            log.debug(`${lines}`);
+            buffer = Buffer.from(lines.pop() || '');
             lines.forEach(line => emitter.emit('line', line));
         })
         .on('end', () => {
-            if (buffer.length > 0) emitter.emit('line', buffer);
+            if (buffer.length > 0) emitter.emit('line', buffer.toString('utf-8'));
         });
 
     emitter.on('line', data => {
@@ -260,6 +262,13 @@ function hostGame(game: Game) {
     const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args, { stdio: 'pipe' });
     handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
     handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
+
+    setInterval(() => {
+        let c = null;
+        while((c = child.stdout.read()) != null){
+            log.info(c);
+        }
+    }, 1000);
 
     ports[game.settings.server.port] = game;
     child.on('error', (er) => {

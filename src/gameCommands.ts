@@ -96,7 +96,7 @@ function deleteGameCmd(msg: GuildMessage, game: Game, arg) {
 function startGame(msg: GuildMessage, game: Game, arg) {
     checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
-    let playerCount = game.playerCount;
+    let playerCount = 6;//game.playerCount;
     let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
     log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
     let provinces = playerCount * provPerPlayer;
