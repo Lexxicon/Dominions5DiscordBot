@@ -1,6 +1,6 @@
 import Discord, { Message, Snowflake } from 'discord.js';
 import fs from 'fs';
-import _ from 'lodash';
+import _, { result } from 'lodash';
 import * as constants from './constants.js';
 import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './dominionsGame.js';
 import util from './util.js';
@@ -46,13 +46,14 @@ class GameState {
     }[] = [];
 }
 
-function parseLines(lines) : GameState{
+function parseLines(lines: string[]) : GameState{
 
     const gameState = new GameState();
 
     for(let line of lines){
-        if(NATION_REGEX.test(line)){
-            const groups = line.match(NATION_REGEX).groups;
+        let res: RegExpMatchArray | null = null;
+        if((res = line.match(NATION_REGEX)) && res.groups){
+            const groups = res.groups;
             gameState.playerStatus.push({
                 nationId: Number(groups.NATION_ID),
                 pretenderId: Number(groups.PRETENDER_ID),
@@ -63,10 +64,10 @@ function parseLines(lines) : GameState{
                 title: groups.TITLE,
                 turnState: constants.TURN_STATE[groups.TURN_STATE],
             });
-        }else if(STATUS_REGEX.test(line)){
-            gameState.name = line.match(STATUS_REGEX).groups.GAME_NAME;
-        }else if(TURN_REGEX.test(line)){
-            const groups = line.match(TURN_REGEX).groups;
+        }else if((res = line.match(STATUS_REGEX)) && res.groups){
+            gameState.name = res.groups.GAME_NAME;
+        }else if((res = line.match(TURN_REGEX)) && res.groups){
+            const groups = res.groups;
             gameState.turnState = {
                 turn: Number(groups.TURN),
                 era: groups.ERA,
@@ -153,6 +154,7 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
         _.forEach(gameState.playerStatus, addRecord);
     }
     game.playerCount = activePlayerCount;
+
     fields.push({
         name: 'Empire',
         value: _.join(activeNames, "\n"),
@@ -177,6 +179,8 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
 
     desc.push(`Hosted at: ${process.env.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
+
+    log.info(`Seconds till host ${game.state.nextTurnStartTime.getSecondsFromNow()}`);
 
     if(gameState.turnState.turn < 0){
         desc.push("Lobby");
@@ -205,6 +209,14 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
     return embeddedMessage;
 }
 
+function getMaxLen(arr: string[]): number {
+    let len = 0; 
+    for(let s in arr){
+        len = Math.max(len, s.length);
+    }
+    return len;
+}
+
 function read(path: string, cb){
     log.info('reading ' + path)
     fs.readFile(path, 'utf8', (err, data) => {
@@ -220,6 +232,7 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
     return () => {
         log.info(`updating ${game.name}`);
         read(filePath, (lines) => {
+            log.debug(`read file`);
             util.getStaleNations(game, (err, staleNations) => {
                 let currentTurnState = parseLines(lines);
                 if(game.state.turn != currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
@@ -253,8 +266,8 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
                         blockPingTime.addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
                     }
                     let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
-                    log.info(`Scheduling ping for ${blockPingTime}`);
                     if(timeTillPing > 0){
+                        log.info(`Scheduling ping for ${blockPingTime}`);
                         blockingNotifications[game.name] = setTimeout(() => pingBlockingPlayers(game), timeTillPing);
                     }
                 }
@@ -286,7 +299,7 @@ function watchStatusFile(filePath: string, game: Game){
 
 function startWatches(game: Game) {
     log.info(`Starting watches on ${game.name}`)
-    const filePath = `${process.env.DOMINION_SAVE_PATH}${game.name}/statusdump.txt`;
+    const filePath = `${process.env.DOM5_CONF}/savedgames/${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
 
         read(filePath, (lines) => {

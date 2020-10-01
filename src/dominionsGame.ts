@@ -273,6 +273,8 @@ function hostGame(game: Game) {
             }catch(err){
                 log.error(`Error updating game ${game.name} ${err}`);
             }
+        }else{
+            log.warn(`Skipping update for ${game.name}`);
         }
     }, 1000 * 60 * 15);
     child.on('exit', (code, sig) => {

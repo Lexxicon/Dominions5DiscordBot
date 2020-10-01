@@ -18,9 +18,10 @@ for(let k in constants.EMOJI){
 
 fs.mkdirSync(`${process.env.BOT_SAVE_PATH}`, {recursive: true});
 fs.mkdirSync(`${process.env.BOT_ARCHIVE_PATH}`, {recursive: true});
+fs.mkdirSync(`${process.env.DOM5_CONF}`, {recursive: true});
 
 function domcmd (commands: string, game, cb?: () =>void) {
-    const path = `${process.env.DOMINION_SAVE_PATH}${game.name}/domcmd`;
+    const path = `${process.env.DOM5_CONF}/savedgames/${game.name}/domcmd`;
     fs.writeFile(path, commands, (err) => {
         if(err && game.discord.channel) {
             game.discord.channels.send('Error while executing dom command! Check logs for more details');
@@ -94,8 +95,8 @@ function backupGame(name: string){
         fs.rmdir(`${path}_${0}`, {recursive: true}, cb);
     });
     backupActions.push((cb) => {
-        log.debug(`backing up save data ${process.env.DOMINION_SAVE_PATH}${name}`);
-        ncp(`${process.env.DOMINION_SAVE_PATH}${name}`, `${path}_${backups}`, cb);
+        log.debug(`backing up save data ${process.env.DOM5_CONF}/savedgames/${name}`);
+        ncp(`${process.env.DOM5_CONF}/savedgames/${name}`, `${path}_${backups}`, cb);
     });
     backupActions.push((cb) => {
         log.debug(`backing up bot data ${process.env.BOT_SAVE_PATH}${name}.json`);
@@ -146,7 +147,7 @@ function randomValue<T>(array: T[]): T{
 function generateName(){
     for(let i = 0; i < 30; i++){
         let name = randomValue(config.GAME_NAME_PREFIX)+'-'+randomValue(config.GAME_NAME_SUFFIX);
-        if(!fs.existsSync(`${process.env.DOMINION_SAVE_PATH}${name}`)){
+        if(!fs.existsSync(`${process.env.DOM5_CONF}/savedgames/${name}`)){
             return name;
         }
     }
@@ -168,7 +169,7 @@ function getSeconds(str: string) {
 }
 
 function getAvailableMods(cb: (files: string[]) => void){
-    return fs.readdir(`${process.env.DOMINION_MODS_PATH}`, 
+    return fs.readdir(`${process.env.DOM5_CONF}/mods/`, 
     (err, files) => cb(files.filter(f => f.endsWith(".dm"))));
 }
 
@@ -189,7 +190,7 @@ function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
         staleTime.addHours(-staleThreshold);
         staleTime.addHours(-game.settings.turns.maxTurnTime);
 
-        fs.readdir(`${process.env.DOMINION_SAVE_PATH}${game.name}`, (err, files) => {
+        fs.readdir(`${process.env.DOM5_CONF}/savedgames/${game.name}`, (err, files) => {
             if(files.length == 0){
                 cb(err, stales);
                 return;
@@ -197,7 +198,7 @@ function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
             let count = files.length;
             files.forEach(file => {
                 if(file.endsWith('.2h')){
-                    fs.stat(`${process.env.DOMINION_SAVE_PATH}${game.name}/${file}`, (err, stat) => {
+                    fs.stat(`${process.env.DOM5_CONF}/savedgames/${game.name}/${file}`, (err, stat) => {
                         if(stat && stat.ctime < staleTime){
                             stales.push(file.substr(0, file.indexOf('.2h')));
                         }
