@@ -202,26 +202,17 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
         .setColor('#0099ff')
         .setTitle(`Game State for: ${gameState.name}`)
         .setDescription(_.join(desc, '\n'))
-        .addFields(
-            fields
-        );
+        .addFields( fields );
 
     return embeddedMessage;
 }
 
-function getMaxLen(arr: string[]): number {
-    let len = 0; 
-    for(let s in arr){
-        len = Math.max(len, s.length);
-    }
-    return len;
-}
-
-function read(path: string, cb){
+function read(path: string, cb:(lines:string[])=>void){
     log.info('reading ' + path)
     fs.readFile(path, 'utf8', (err, data) => {
         if(err){
             log.warn(err);
+            cb([]);
         }else{
             cb(data.split('\n'));
         } 
@@ -283,17 +274,19 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
 
 function watchStatusFile(filePath: string, game: Game){
     log.info(`Setting up watch for ${game.name}`);
-    game.getChannel(c => {
-        c.messages.fetch(game.discord.turnStateMessageId)
-            .then( msg =>{
-                let update = bindUpdateGameStatus(msg, filePath, game);
-                fs.watch(filePath, 'utf8', update);
-                update();
-                game.update = update;
-            })
-            .catch(err => {
-                log.error(err);
-            });
+    game.getChannel!(c => {
+        if(game.discord.turnStateMessageId){
+            c.messages.fetch(game.discord.turnStateMessageId)
+                .then( msg =>{
+                    let update = bindUpdateGameStatus(msg, filePath, game);
+                    fs.watch(filePath, 'utf8', update);
+                    update();
+                    game.update = update;
+                })
+                .catch(err => {
+                    log.error(err);
+                });
+        }
     });
 }
 
@@ -301,11 +294,11 @@ function startWatches(game: Game) {
     log.info(`Starting watches on ${game.name}`)
     const filePath = `${process.env.DOM5_CONF}/savedgames/${game.name}/statusdump.txt`;
     if(!game.discord.turnStateMessageId){
-
+        log.info(`Preping turn state message`);
         read(filePath, (lines) => {
             util.getStaleNations(game, (err, staleNations) => {
                 const embeddedMessage = createEmbeddedGameState(game, parseLines(lines), staleNations);
-                game.getChannel(c => {
+                game.getChannel!(c => {
                     if(!game.discord.turnStateMessageId){
                         c.send(embeddedMessage)
                             .then(msg => {
@@ -313,6 +306,9 @@ function startWatches(game: Game) {
                                 game.discord.turnStateMessageId = msg.id;
                                 saveGame(game);
                                 watchStatusFile(filePath, game);
+                            })
+                            .catch(err => {
+                                log.error(err);
                             });
                     }
                 });

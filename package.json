@@ -20,7 +20,8 @@
     "parse-numeric-range": "^1.2.0",
     "source-map-loader": "^1.1.0",
     "source-map-support": "^0.5.19",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2"
   },
   "devDependencies": {},
   "description": ""

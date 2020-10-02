@@ -1,7 +1,7 @@
 
 
 import { ChildProcess, spawn } from 'child_process';
-import { Channel, Client, GuildChannel, Snowflake } from "discord.js";
+import { Channel, Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
 import EventEmitter from 'events';
 import _, { Dictionary, NumericDictionary } from "lodash";
 import { getLogger } from 'log4js';
@@ -56,7 +56,7 @@ export class Game {
     canary?: number;
     getProcess?: () => ChildProcess;
     getGuild?: any;
-    getChannel?: any;
+    getChannel?: (callback:(channel: TextChannel & GuildChannel)=>void)=>void;
     getGameLobby?: any;
     save?: any;
     getPlayerForNation?: any;
@@ -151,7 +151,7 @@ function getGames() {
 
 function pingPlayers(game: Game, msg: string, cb) {
     if (game.discord.playerRoleId) {
-        game.getChannel(channel => {
+        game.getChannel!((channel) => {
             channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
                 .then(m => {
                     cb(m);
@@ -370,11 +370,11 @@ function wrapGame(game: Game, bot: Client) {
         game.settings.setup.mods = [];
     }
 
-    let channel: Channel | null = null;
+    let channel: (TextChannel & GuildChannel) | null = null;
     game.getChannel = (cb) => {
         if (channel === null) {
             bot.channels.fetch(game.discord.channelId, true)
-                .then(c => {
+                .then((c:any) => {
                     channel = c;
                     cb(c);
                 })
@@ -398,10 +398,10 @@ function wrapGame(game: Game, bot: Client) {
         }
     }
 
-    let guild = null;
+    let guild: Guild | null = null;
     game.getGuild = (cb) => {
         if (guild === null) {
-            game.getChannel(ch => {
+            game.getChannel!(ch => {
                 guild = ch.guild;
                 cb(guild);
             });
