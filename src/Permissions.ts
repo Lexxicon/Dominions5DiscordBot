@@ -1,6 +1,6 @@
 import { GuildMember } from "discord.js";
+import { Game } from "./DominionsGame";
 import { getLogger } from "log4js";
-import { Game } from "./dominionsGame";
 
 const log = getLogger();
 

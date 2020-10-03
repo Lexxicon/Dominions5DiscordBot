@@ -1,25 +1,25 @@
 require('dotenv').config();
 require('source-map-support').install();
-require('./prototypes.js');
+require('./Prototypes.js');
 
 import { getLogger } from 'log4js';
 const log = getLogger();
 
-require('./validateEnv.js');
 
 log.info(``);
 log.info(`-------------- Application Starting ${new Date()} --------------`);
 log.info(``);
 
+require('./ValidateEnv.js').validate();
 
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
-import { hostGame, loadGame } from './dominionsGame.js';
-import * as dominionsStatus from "./dominionsStatus.js";
-import gameCommandHandler from './gameCommands.js';
-import { GuildMessage } from './global.js';
-import lobbyCommandHandler from './lobbyCommands.js';
-import serverCommandHandler from './serverCommands.js';
-import util from "./util.js";
+import { hostGame, loadGame } from './DominionsGame';
+import * as dominionsStatus from './DominionsStatus';
+import gameCommandHandler from './GameCommands';
+import { GuildMessage } from './global';
+import lobbyCommandHandler from './LobbyCommands';
+import serverCommandHandler from './ServerCommands';
+import util from "./Util";
 
 
 const bot = new Discord.Client();
@@ -73,7 +73,7 @@ bot.on('message', msg => {
 
         let result = 0;
         msg.react(util.emoji(':thinking:')).then(r => {
-            result = handler(msg);
+            result = handler(msg as any);
         }).then( r => {
             msg.reactions.removeAll()
             .catch(err => {

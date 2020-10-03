@@ -1,10 +1,10 @@
 const log = require("log4js").getLogger();
 
-import util from './util.js';
-import * as status from './dominionsStatus.js';
-import { Guild, Message } from 'discord.js';
-import { create, hostGame } from './dominionsGame.js';
-import { Era, GuildMessage } from './global.js';
+import { Guild } from 'discord.js';
+import { create, hostGame } from './DominionsGame';
+import * as status from './DominionsStatus';
+import { GuildMessage } from './global';
+import util from './Util';
 
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME!;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();

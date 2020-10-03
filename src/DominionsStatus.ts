@@ -1,10 +1,10 @@
+import * as constants from './Constants';
 import Discord, { Message, Snowflake } from 'discord.js';
+import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
 import fs from 'fs';
-import _, { result } from 'lodash';
-import * as constants from './constants.js';
-import { Game, pingBlockingPlayers, pingPlayers, saveGame } from './dominionsGame.js';
-import util from './util.js';
+import _ from 'lodash';
 import log4js from 'log4js';
+import util from './Util';
 
 const log = log4js.getLogger();
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
@@ -332,9 +332,9 @@ function startWatches(game: Game) {
     }
 }
 
-export  {
+export {
     PlayerStatus,
     parseLines,
     createEmbeddedGameState,
     startWatches
-}
+};

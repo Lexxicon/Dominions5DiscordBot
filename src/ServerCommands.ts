@@ -1,6 +1,5 @@
-import { Message } from "discord.js";
-import { getLogger } from "log4js";
 import { GuildMessage } from "./global";
+import { getLogger } from "log4js";
 
 const log = getLogger();
 

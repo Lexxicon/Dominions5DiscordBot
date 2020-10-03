@@ -1,9 +1,9 @@
 
-import { DMChannel, Guild, Message, NewsChannel, TextChannel } from "discord.js";
+import * as constants from './Constants';
+import { Guild, Message, NewsChannel, TextChannel } from "discord.js";
 import fs from "fs";
+import { GuildMessage } from "./global";
 import _ from "lodash";
-import * as constants from './constants.js';
-import { GuildMessage } from "./global.js";
 const log = require("log4js").getLogger();
 
 const config = require('../res/config.json');

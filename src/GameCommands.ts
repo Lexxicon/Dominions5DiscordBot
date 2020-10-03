@@ -1,11 +1,10 @@
 const log = require("log4js").getLogger();
 
-import { GuildMember, Message } from 'discord.js';
-import * as constants from './constants.js';
-import { deleteGame, Game, getGames, hostGame, saveGame, stopGame } from "./dominionsGame.js";
-import { GuildMessage } from './global.js';
-import { checkPermission, Permission } from './permissions.js';
-import util from './util.js';
+import * as constants from './Constants';
+import { deleteGame, Game, getGames, hostGame, saveGame, stopGame } from "./DominionsGame";
+import { GuildMessage } from './global';
+import { checkPermission, Permission } from './Permissions';
+import util from './Util';
 
 const races = require("../res/races.json");
 

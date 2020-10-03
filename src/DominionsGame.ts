@@ -1,15 +1,15 @@
 
 
 import { ChildProcess, spawn } from 'child_process';
-import { Channel, Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
+import * as constants from './Constants';
+import { Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
+import { PlayerStatus } from './DominionsStatus';
 import EventEmitter from 'events';
+import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
 import _, { Dictionary, NumericDictionary } from "lodash";
 import { getLogger } from 'log4js';
 import { Readable } from "stream";
-import * as constants from './constants.js';
-import { PlayerStatus } from './dominionsStatus.js';
-import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global.js';
-import util from './util.js';
+import util from './Util';
 
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
