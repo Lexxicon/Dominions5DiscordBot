@@ -46,6 +46,25 @@ class GameState {
     }[] = [];
 }
 
+class PlayerStatus{
+    nationId = 0;
+    pretenderId = 0;
+    stringId = "";
+    aiDifficulty = 0;
+    playerStatus = {
+        id: 0,
+        canBlock: true,
+        display: ""
+    };
+    name = "";
+    title = "";
+    turnState = {
+        id: 0,
+        ready: false,
+        display: ""
+    };
+}
+
 function parseLines(lines: string[]) : GameState{
 
     const gameState = new GameState();
@@ -105,18 +124,19 @@ function createEmbeddedGameState(game: Game, gameState: GameState, staleNations:
 
         if(s.aiDifficulty > 0){
             playerName = constants.AI_DIFFICULTY[s.aiDifficulty];
-            activePlayerCount++;
         }else{
             playerName = game.getDisplayName(s.nationId);
             if(playerName == '-'){
                 if(s.playerStatus.id != 0){
-                    activePlayerCount++;
                 }
                 playerName = s.playerStatus.display;
             }
         }
         if(s.playerStatus.id < 0){
             playerName = `[${s.playerStatus.display}] ${playerName}`;
+        }
+        if(playerName != '-' && playerName != ''){
+            activePlayerCount++;
         }
         activePlayers.push(playerName);
         let state = "-";
@@ -234,11 +254,7 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
                     
                     game.state.turn = currentTurnState.turnState.turn;
                     game.state.notifiedBlockers = false;
-                    if(game.settings.turns.maxTurnTime){
-                        game.state.nextTurnStartTime = new Date().addHours(game.settings.turns.maxTurnTime);
-                    }else{
-                        game.state.nextTurnStartTime = new Date().addMinutes(game.settings.turns.maxTurnTimeMinutes);
-                    }
+                    game.state.nextTurnStartTime = new Date().addMinutes(game.settings.turns.maxTurnTimeMinutes);
                     pingPlayers(game, `Start of turn ${game.state.turn}`,
                         (m) => {
                             saveGame(game);
@@ -251,11 +267,7 @@ function bindUpdateGameStatus(msg: Message, filePath: string, game: Game){
 
                 if(!blockingNotifications[game.name]){
                     let blockPingTime = new Date(game.state.nextTurnStartTime);
-                    if(game.settings.turns.maxTurnTime){
-                        blockPingTime.addHours(-Math.ceil(game.settings.turns.maxTurnTime / 4));
-                    }else{
-                        blockPingTime.addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
-                    }
+                    blockPingTime.addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
                     let timeTillPing = blockPingTime.getSecondsFromNow() * 1000;
                     if(timeTillPing > 0){
                         log.info(`Scheduling ping for ${blockPingTime}`);
@@ -320,7 +332,8 @@ function startWatches(game: Game) {
     }
 }
 
-export = {
+export  {
+    PlayerStatus,
     parseLines,
     createEmbeddedGameState,
     startWatches

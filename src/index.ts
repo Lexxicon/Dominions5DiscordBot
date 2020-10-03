@@ -14,7 +14,7 @@ log.info(``);
 
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
 import { hostGame, loadGame } from './dominionsGame.js';
-import dominionsStatus from "./dominionsStatus.js";
+import * as dominionsStatus from "./dominionsStatus.js";
 import gameCommandHandler from './gameCommands.js';
 import { GuildMessage } from './global.js';
 import lobbyCommandHandler from './lobbyCommands.js';

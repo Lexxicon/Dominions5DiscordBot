@@ -105,8 +105,14 @@ function backupGame(name: string){
 
     backupActions.reverse();
 
-    let callback = (err) => {
-        if(err) { log.error(err)}
+    let callback = (err: NodeJS.ErrnoException[]|null) => {
+        if(err) { 
+            for(let e of err){
+                if(e.code != 'ENOENT'){
+                    log.error(JSON.stringify(err)) 
+                }
+            }
+        }
         let next = backupActions.pop();
         if(next){
             next(callback);
@@ -232,8 +238,18 @@ export = {
         return guild.channels.cache.find(c => c.name === name);
     },
     domcmd: {
+        raw: function(game, arg) {domcmd(arg, game)},
         startGame: function(game, seconds = 15, cb?: () => void){
             domcmd(`settimeleft ${seconds}`, game, cb);
+        },
+        setQuickHost: (game, quickHost)=>{
+            domcmd(`setquickhost ${quickHost ? 1 : 0}`, game);
+        },
+        setInterval: (game, interval)=>{
+            domcmd(`setinterval ${interval}`, game);
+        },
+        setPause: (game, pause)=>{
+            domcmd(`setpause ${pause ? 1 : 0}`, game);
         }
     },
     emoji,

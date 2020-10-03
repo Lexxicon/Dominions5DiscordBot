@@ -96,7 +96,7 @@ function deleteGameCmd(msg: GuildMessage, game: Game, arg) {
 function startGame(msg: GuildMessage, game: Game, arg) {
     checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
-    let playerCount = 6;//game.playerCount;
+    let playerCount = game.playerCount;
     let provPerPlayer = constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
     log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
     let provinces = playerCount * provPerPlayer;
@@ -210,6 +210,12 @@ function changeGameSettings(msg:GuildMessage, game: Game, arg: string){
                 game.settings.setup.mods.forEach(element => {
                     log.info(element);
                 });
+            return 0;
+
+            case 'setTurnDuration':
+                game.settings.turns.maxTurnTimeMinutes = Number(args[1]);
+                util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
+                saveGame(game);
             return 0;
 
             case 'set':{

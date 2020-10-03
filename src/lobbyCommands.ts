@@ -1,7 +1,7 @@
 const log = require("log4js").getLogger();
 
 import util from './util.js';
-import status from './dominionsStatus.js';
+import * as status from './dominionsStatus.js';
 import { Guild, Message } from 'discord.js';
 import { create, hostGame } from './dominionsGame.js';
 import { Era, GuildMessage } from './global.js';

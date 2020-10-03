@@ -7,6 +7,7 @@ import _, { Dictionary, NumericDictionary } from "lodash";
 import { getLogger } from 'log4js';
 import { Readable } from "stream";
 import * as constants from './constants.js';
+import { PlayerStatus } from './dominionsStatus.js';
 import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global.js';
 import util from './util.js';
 
@@ -22,14 +23,13 @@ export class Game {
         nextTurnStartTime: new Date(0),
         notifiedBlockers: false
     };
-    playerStatus: any[] = [];
+    playerStatus: PlayerStatus[] = [];
     settings = {
         server: {
             port: null as number | null
         },
         turns: {
             quickHost: true,
-            maxTurnTime: 48 as number | undefined,
             maxTurnTimeMinutes: 2880
         },
         setup: {
@@ -146,7 +146,7 @@ function pingBlockingPlayers(game: Game) {
             }
 
             let playerIDs = blockingNations.map(game.getPlayerForNation);
-            let ping = playerIDs.map(id => `<@${id}>`).join(' ');
+            let ping = playerIDs.map((id, index) => id ? `<@${id}>`:``).join(' ');
 
             let hoursTillHost = Math.floor((game.state.nextTurnStartTime.getSecondsFromNow() / 60) / 60);
 
@@ -400,10 +400,7 @@ function getLaunchArgs(config: Game) {
 
     // --- turn settings ---
     if (!turns.quickHost) args.push("--noquickhost");
-    if (turns.maxTurnTime) {
-        args.push("--hours");
-        args.push(turns.maxTurnTime);
-    } else if (turns.maxTurnTimeMinutes > 0) {
+    if (turns.maxTurnTimeMinutes > 0) {
         args.push("--minutes");
         args.push(turns.maxTurnTimeMinutes);
     }
