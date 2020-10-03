@@ -11,7 +11,7 @@ const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
 function createChannel(guild: Guild, name: string, reason: string, cb){
     name = name.toLowerCase();
-    log.info('create ' + name);
+    log.info('Create channel ' + name);
     if (name === LOBBY_NAME) {
         log.warn('Can\'t create the lobby!');
         return;

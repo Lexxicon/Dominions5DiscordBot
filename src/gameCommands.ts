@@ -140,7 +140,7 @@ function forceTurn(msg: GuildMessage, game: Game, arg: string){
     return 0;
 }
 
-function restartGame(msg: GuildMessage, game: Game, arg){
+function restartGame(msg: GuildMessage, game: Game, arg: string){
     checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
     log.info(`Killing ${game.name} ${game.canary}`);
@@ -159,6 +159,22 @@ function restartGame(msg: GuildMessage, game: Game, arg){
         gameProcess.on('exit', () => setTimeout(host, 1000));
     }
     return 0;
+}
+
+function stopServer(msg: GuildMessage, game: Game, arg: string){
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
+    log.info(`Killing ${game.name} ${game.canary}`);
+    stopGame(game);
+
+    return 1;
+}
+
+function startServer(msg: GuildMessage, game: Game, arg: string){
+    checkPermission(msg.member, Permission.GAME_ADMIN, game);
+    log.info(`Starting ${game.name}`);
+    hostGame(game);
+
+    return 1;
 }
 
 function changeGameSettings(msg:GuildMessage, game: Game, arg: string){
@@ -295,6 +311,10 @@ function handleCommand(msg: GuildMessage): number{
                 return 0;
             case 'restartGame':
                 return restartGame(msg, game, arg);
+            case 'stopServer':
+                return stopServer(msg, game, arg);
+            case 'startServer':
+                return startServer(msg, game, arg);
             default: 
                 return -1;
         }

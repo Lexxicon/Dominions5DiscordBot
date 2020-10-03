@@ -11,6 +11,8 @@ import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './gl
 import util from './util.js';
 
 const log = getLogger();
+const ports: NumericDictionary<Game | null> = {};
+const games: Dictionary<Game> = {};
 
 export class Game {
     name: string;
@@ -53,15 +55,14 @@ export class Game {
         players: {} as Dictionary<string> //playerId : nationId
     };
 
-    canary?: number;
     getProcess?: () => ChildProcess;
-    getGuild?: any;
+    getGuild?: (callback:(guild: Guild)=>void)=>void;
     getChannel?: (callback:(channel: TextChannel & GuildChannel)=>void)=>void;
-    getGameLobby?: any;
     save?: any;
     getPlayerForNation?: any;
     getDisplayName?: any;
     update?: () => void;
+    pid: number = 0;
 
     constructor(channel: GuildChannel, name: string, bot: Client) {
         this.name = name;
@@ -78,69 +79,19 @@ export class Game {
     }
 }
 
-const ports: NumericDictionary<Game | null> = {};
-
 _.forEach(require('parse-numeric-range')(process.env.PORTS), p => ports[p] = null);
 
-const games: Dictionary<Game> = {};
-
 function killGames() {
-
+    log.info(`Killing Games`);
     _.keys(ports).forEach((key) => {
-        let game = ports[key];
-        if (game !== null && game.getProcess) {
-            log.info(`Killing ${key}`);
-            game.getProcess().kill();
-            delete game.getProcess;
-        }
+        let game:Game = ports[key];
+        stopGame(game);
     });
 }
 process.on('cleanup', killGames);
 
 function create(channel: GuildChannel, name: string, bot: Client) {
-    const game: Game = {
-        name: name,
-        playerCount: 0,
-        playerStatus: [],
-        state: {
-            turn: -1,
-            nextTurnStartTime: new Date(0),
-            notifiedBlockers: false
-        },
-        settings: {
-            server: {
-                port: null
-            },
-            turns: {
-                quickHost: true,
-                maxTurnTime: undefined,
-                maxTurnTimeMinutes: 2880
-            },
-            setup: {
-                masterPass: Math.random().toString(36).substring(2, 15),
-                era: 'MIDDLE', //[EARLY=1, MIDDLE=2, LATE=3]
-                storyEvents: 'ALL', //[NONE, SOME, ALL]
-                eventRarity: 'COMMON', // [common=1, rare=2]
-                map: 'MEDIUM', // [SMALL, MEDIUM, LARGE] or name of actual map
-                disciples: false,
-                slots: {},
-                thrones: [5, 3, 2],
-                victoryPoints: 8,
-                cataclysm: 72,
-                mods: []
-            }
-        },
-        discord: {
-            channelId: channel.id,
-            gameLobbyChannelId: null,
-            turnStateMessageId: null,
-            playerRoleId: null,
-            adminRoleId: null,
-            players: {
-                //playerId : nationId
-            }
-        }
-    };
+    const game = new Game(channel, name, bot);
     log.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
     return wrapGame(game, bot);
 }
@@ -179,7 +130,7 @@ function getBlockingNations(game: Game, staleNations: Snowflake[]) {
 }
 
 function pingBlockingPlayers(game: Game) {
-    game.getGameLobby(channel => {
+    game.getChannel!(channel => {
         util.getStaleNations(game, (err, staleNations) => {
             if (game.state.notifiedBlockers) {
                 log.info(`Already notified ${game.name}`);
@@ -257,7 +208,7 @@ function hostGame(game: Game) {
     const args = getLaunchArgs(game);
     log.info(`Spawning Host: ${process.env.DOMINION_EXEC_PATH} ${args}`)
 
-    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args, { stdio: 'pipe' });
+    const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args, { stdio: 'pipe', detached: true });
     handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
     handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
 
@@ -284,15 +235,15 @@ function hostGame(game: Game) {
         }
         clearInterval(updateInterval);
     });
-    log.debug(`binding process on ${game.name} to ${child} ${child.pid}`);
+    log.debug(`Hosted ${game.name} with pid ${child.pid}`);
     game.getProcess = () => child;
-    game.canary = child.pid;
+    game.pid = child.pid;
 }
 
 function stopGame(game: Game) {
-    log.info(`stopping ${game.name} ${game.canary}`)
+    log.info(`stopping ${game.name} ${game.pid}`)
     if (game.getProcess) {
-        game.getProcess().kill();
+        process.kill(-game.getProcess().pid);
         delete game.getProcess;
     }
     if (ports[game.settings.server.port!] === game) {
@@ -301,7 +252,7 @@ function stopGame(game: Game) {
 }
 
 function unloadGame(game: Game) {
-    log.info(`unloading: ${game.name} ${game.canary}`);
+    log.info(`unloading: ${game.name} ${game.pid}`);
     stopGame(game);
     if (games[game.name] === game) {
         delete games[game.name];
@@ -309,19 +260,19 @@ function unloadGame(game: Game) {
 }
 
 function deleteGame(game: Game) {
-    log.info(`Deleting ${game.name} ${game.canary}`);
+    log.info(`Deleting ${game.name} ${game.pid}`);
     let childProcess = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
-    game.getGuild(guild => {
+    game.getGuild!(guild => {
         if (game.discord.playerRoleId) {
             guild.roles.fetch(game.discord.playerRoleId)
-                .then(r => r.delete())
+                .then(r => r!.delete())
                 .catch(log.error);
         }
         
         if (game.discord.adminRoleId) {
             guild.roles.fetch(game.discord.adminRoleId)
-                .then(r => r.delete())
+                .then(r => r!.delete())
                 .catch(log.error);
         }
 
@@ -381,20 +332,6 @@ function wrapGame(game: Game, bot: Client) {
                 .catch(log.error);
         } else {
             cb(channel);
-        }
-    }
-
-    let gameLobby: Channel | null = null;
-    game.getGameLobby = (cb) => {
-        if (gameLobby === null) {
-            bot.channels.fetch(game.discord.gameLobbyChannelId!, true)
-                .then(c => {
-                    gameLobby = c;
-                    cb(c);
-                })
-                .catch(log.error);
-        } else {
-            cb(gameLobby);
         }
     }
 
