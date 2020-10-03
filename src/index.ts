@@ -15,12 +15,15 @@ require('./ValidateEnv.js').validate();
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
 import { hostGame, loadGame } from './DominionsGame';
 import * as dominionsStatus from './DominionsStatus';
-import gameCommandHandler from './GameCommands';
+import {processGameCommand} from './commands/GameCommandHandler';
 import { GuildMessage } from './global';
 import lobbyCommandHandler from './LobbyCommands';
 import serverCommandHandler from './ServerCommands';
 import util from "./Util";
+import { loadAllCommands } from './commands/CommandLoader';
 
+
+loadAllCommands();
 
 const bot = new Discord.Client();
 const TOKEN = process.env.TOKEN;;
@@ -58,22 +61,25 @@ bot.on('ready', () => {
 bot.on('message', msg => {
     if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel) && util.isGuildMessage(msg)){
 
-        let handler: (msg: GuildMessage)=> number;
+        let handler: (msg: GuildMessage)=> Promise<number>;
         log.info(msg.channel.name);
         if (msg.channel.name == LOBBY_NAME) {
             log.info("Handling lobby command");
             handler = lobbyCommandHandler;
         }else if(msg.channel.parent?.name == `${process.env.DEFAULT_GAMES_CATEGORY_NAME}`){
             log.info("Handling game command");
-            handler = gameCommandHandler;
+            handler = processGameCommand;
         }else{
             log.info("Handling server command");
             handler = serverCommandHandler
         }
 
         let result = 0;
-        msg.react(util.emoji(':thinking:')).then(r => {
-            result = handler(msg as any);
+        msg.react(util.emoji(':thinking:'))
+        .then(r => {
+            return handler(msg);
+        }).then(r => {
+            result = r;
         }).then( r => {
             msg.reactions.removeAll()
             .catch(err => {

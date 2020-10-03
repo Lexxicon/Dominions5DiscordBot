@@ -103,7 +103,7 @@ function createNewGame(msg: GuildMessage, era: any){
 
 let pingMsgs = {};
 
-function handleCommand(msg: GuildMessage): number{
+async function handleCommand(msg: GuildMessage): Promise<number>{
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
         return -1;
     }

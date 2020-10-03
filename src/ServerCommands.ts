@@ -32,7 +32,7 @@ function initServer(msg: GuildMessage){
     return 1;
 }
 
-function handleCommand(msg: GuildMessage){
+async function handleCommand(msg: GuildMessage){
     const input = msg.content.substring(1);
 
     let split = input.indexOf(' ');

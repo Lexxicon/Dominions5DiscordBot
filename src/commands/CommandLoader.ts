@@ -11,10 +11,8 @@ async function* walk(dir) {
     }
 }
 
-
 async function load() {
     for await (const p of walk(__dirname) as string){
-        console.log(p)
         if(p.endsWith('.js')){
             try{
                 require(p);

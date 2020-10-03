@@ -4,7 +4,8 @@
   "main": "src/index.ts",
   "scripts": {
     "tsc": "tsc",
-    "start": "tsc && node build/index.js"
+    "clean": "rimraf build/",
+    "start": "rimraf build/ && tsc && node build/index.js"
   },
   "author": "Lexxicon",
   "license": "ISC",
@@ -18,6 +19,7 @@
     "log4js": "^6.3.0",
     "ncp": "^2.0.0",
     "parse-numeric-range": "^1.2.0",
+    "rimraf": "^3.0.2",
     "source-map-loader": "^1.1.0",
     "source-map-support": "^0.5.19",
     "typescript": "^4.0.3",
