@@ -1,7 +1,9 @@
 require('dotenv').config();
 require('source-map-support').install();
 require('./prototypes.js');
-const log = require("log4js").getLogger();
+
+import { getLogger } from 'log4js';
+const log = getLogger();
 
 require('./validateEnv.js');
 
@@ -42,8 +44,8 @@ process.on('SIGINT', function () {
 
 //catch uncaught exceptions, trace, then exit normally
 process.on('uncaughtException', function(e) {
-    log.info(`Uncaught Exception... ${e} ${e.name}`);
-    log.info(e.stack);
+    log.error(`Uncaught Exception... ${e} ${e.name}`);
+    log.error(e.stack);
     cleanup();
     process.exit(99);
 });

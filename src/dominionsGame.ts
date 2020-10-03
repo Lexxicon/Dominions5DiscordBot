@@ -85,10 +85,12 @@ function killGames() {
     log.info(`Killing Games`);
     _.keys(ports).forEach((key) => {
         let game:Game = ports[key];
-        stopGame(game);
+        if(game){
+            stopGame(game);
+        }
     });
 }
-process.on('cleanup', killGames);
+process.on('exit', killGames);
 
 function create(channel: GuildChannel, name: string, bot: Client) {
     const game = new Game(channel, name, bot);

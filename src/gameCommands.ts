@@ -143,7 +143,7 @@ function forceTurn(msg: GuildMessage, game: Game, arg: string){
 function restartGame(msg: GuildMessage, game: Game, arg: string){
     checkPermission(msg.member, Permission.GAME_ADMIN, game);
 
-    log.info(`Killing ${game.name} ${game.canary}`);
+    log.info(`Killing ${game.name} ${game.pid}`);
     let gameProcess = game.getProcess ? game.getProcess() : null;
     stopGame(game);
     let host = () => {
@@ -163,7 +163,7 @@ function restartGame(msg: GuildMessage, game: Game, arg: string){
 
 function stopServer(msg: GuildMessage, game: Game, arg: string){
     checkPermission(msg.member, Permission.GAME_ADMIN, game);
-    log.info(`Killing ${game.name} ${game.canary}`);
+    log.info(`Killing ${game.name} ${game.pid}`);
     stopGame(game);
 
     return 1;
