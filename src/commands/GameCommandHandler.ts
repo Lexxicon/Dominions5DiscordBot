@@ -55,7 +55,7 @@ export async function processGameCommand(msg: GuildMessage){
     for(let gameKey in games){
         let game = games[gameKey];
 
-        if(msg.channel.id != game.discord.gameLobbyChannelId){
+        if(msg.channel.id != game.discord.channelId){
             continue;
         }
         checkPermission(msg.member, command.getNeededPermission(), game);

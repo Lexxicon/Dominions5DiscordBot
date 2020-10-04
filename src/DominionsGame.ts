@@ -3,52 +3,62 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as constants from './Constants';
 import { Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
-import { PlayerStatus } from './DominionsStatus';
+import { PlayerStatus, updateGameStatus } from './DominionsStatus';
 import EventEmitter from 'events';
 import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
 import _, { Dictionary, NumericDictionary } from "lodash";
 import { getLogger } from 'log4js';
 import { Readable } from "stream";
 import util from './Util';
+import { getDiscordBot } from '.';
+import { adaptGame, GAME_BINARY_VERSION } from './LegacyGameConverter';
 
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
 const games: Dictionary<Game> = {};
 
+
 export class Game {
+    version = GAME_BINARY_VERSION;
     name: string;
     playerCount = 0;
     state = {
         turn: -1,
         nextTurnStartTime: new Date(0),
-        notifiedBlockers: false
+        notifiedBlockers: false,
+        paused: false
     };
     playerStatus: PlayerStatus[] = [];
     settings = {
         server: {
-            port: null as number | null
+            port: null as number | null,
+            masterPass: Math.random().toString(36).substring(2, 15)
         },
         turns: {
             quickHost: true,
-            maxTurnTimeMinutes: 2880
+            paused: false,
+            maxTurnTimeMinutes: 2880,
+            maxHoldUps: 2
         },
         setup: {
-            masterPass: Math.random().toString(36).substring(2, 15),
             era: 'MIDDLE' as Era,
             storyEvents: 'ALL' as StoryEventLevel,
             eventRarity: 'COMMON' as EventRarity,
             map: 'MEDIUM' as MapOptions | string,
             disciples: false,
             slots: {} as Dictionary<SlotOptions>,
-            thrones: [5, 3, 2],
-            victoryPoints: 8,
+            thrones: {
+                level1: -1,
+                level2: -1,
+                level3: -1
+            },
+            victoryPoints: -1,
             cataclysm: 72,
             mods: [] as string[],
         }
     };
     discord = {
         channelId: "" as Snowflake,
-        gameLobbyChannelId: null as Snowflake | null,
         turnStateMessageId: null as Snowflake | null,
         playerRoleId: null as Snowflake | null,
         adminRoleId: null as Snowflake | null,
@@ -56,19 +66,13 @@ export class Game {
     };
 
     getProcess?: () => ChildProcess;
-    getGuild?: (callback:(guild: Guild)=>void)=>void;
-    getChannel?: (callback:(channel: TextChannel & GuildChannel)=>void)=>void;
-    save?: any;
-    getPlayerForNation?: any;
-    getDisplayName?: any;
-    update?: () => void;
+
     pid: number = 0;
 
-    constructor(channel: GuildChannel, name: string, bot: Client) {
+    constructor(channel: GuildChannel, name: string) {
         this.name = name;
         this.discord = {
             channelId: channel.id,
-            gameLobbyChannelId: null,
             turnStateMessageId: null,
             playerRoleId: null,
             adminRoleId: null,
@@ -92,69 +96,65 @@ function killGames() {
 }
 process.on('exit', killGames);
 
-function create(channel: GuildChannel, name: string, bot: Client) {
-    const game = new Game(channel, name, bot);
-    log.info(`Created ${game.name}. Master Pass: ${game.settings.setup.masterPass}`);
-    return wrapGame(game, bot);
+function create(channel: GuildChannel, name: string) {
+    const game = new Game(channel, name);
+    log.info(`Created ${game.name}. Master Pass: ${game.settings.server.masterPass}`);
+    return wrapGame(game);
 }
 
 function getGames() {
     return games;
 }
 
-function pingPlayers(game: Game, msg: string, cb) {
+async function pingPlayers(game: Game, msg: string) {
     if (game.discord.playerRoleId) {
-        game.getChannel!((channel) => {
-            channel.send(`<@&${game.discord.playerRoleId}> ${msg}`)
-                .then(m => {
-                    cb(m);
-                })
-                .catch(log.error);
-        });
+        let channel = await getChannel(game);
+        if(!channel){
+            return;
+        }
+        await channel.send(`<@&${game.discord.playerRoleId}> ${msg}`);
     }
 }
 
 function getBlockingNations(game: Game, staleNations: Snowflake[]) {
     if (!staleNations) staleNations = [];
 
-    let blockingNations: number[] = [];
+    let blockingNations: string[] = [];
     for (let player of game.playerStatus) {
         if (player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)) {
-            blockingNations.push(player.nationId);
+            blockingNations.push(`${player.nationId}`);
         }
     }
     if (blockingNations.length == 0) {
         log.info(`No blocking players for ${game.name}`);
         return [];
     }
-    blockingNations.sort((a, b) => a - b);
+    blockingNations.sort((a, b) => Number(a) - Number(b));
     return blockingNations;
 }
 
-function pingBlockingPlayers(game: Game) {
-    game.getChannel!(channel => {
-        util.getStaleNations(game, (err, staleNations) => {
-            if (game.state.notifiedBlockers) {
-                log.info(`Already notified ${game.name}`);
-                return;
-            }
-            let blockingNations = getBlockingNations(game, staleNations);
+async function pingBlockingPlayers(game: Game) {
+    let channel = await getChannel(game);
+    if(!channel) return;
 
-            if (blockingNations.length == 0) {
-                log.info(`No blocking players for ${game.name}`);
-                return;
-            }
+    let staleNations = await util.getStaleNations(game);
+    if (game.state.notifiedBlockers) {
+        log.info(`Already notified ${game.name}`);
+        return;
+    }
+    let blockingNations = getBlockingNations(game, staleNations);
 
-            let playerIDs = blockingNations.map(game.getPlayerForNation);
-            let ping = playerIDs.map((id, index) => id ? `<@${id}>`:``).join(' ');
+    if (blockingNations.length == 0) {
+        log.info(`No blocking players for ${game.name}`);
+        return;
+    }
 
-            let hoursTillHost = Math.floor((game.state.nextTurnStartTime.getSecondsFromNow() / 60) / 60);
+    let playerIDs = blockingNations.map(v => getPlayerForNation(game, v));
+    let ping = playerIDs.map((id) => id ? `<@${id}>`:``).join(' ');
 
-            game.state.notifiedBlockers = true;
-            channel.send(`${ping}\nNext turn starts in ${hoursTillHost} hours!`);
-            saveGame(game);
-        });
-    });
+    game.state.notifiedBlockers = true;
+    await saveGame(game);
+    await channel.send(`${ping}\nNext turn starts in ${util.getDisplayTime(game.state.nextTurnStartTime.getSecondsFromNow())}!`);
 }
 
 function handleStreamLines(outStream: Readable, handler: (line: string) => void) {
@@ -184,14 +184,14 @@ function handleStreamLines(outStream: Readable, handler: (line: string) => void)
     });
 }
 
-function hostGame(game: Game) {
+async function hostGame(game: Game) {
     log.info(`hosting: ${game.name}`);
     if (!game.settings.server.port) {
         let port = _.findKey(ports, p => p === null);
         if (port) {
             log.info(`Assigned port: ${port} to game: ${game.name}`);
             game.settings.server.port = Number(port);
-            game.save();
+            saveGame(game);
         } else {
             throw `Failed to host! No available ports! Game: ${game.name}`;
         }
@@ -211,43 +211,65 @@ function hostGame(game: Game) {
     log.info(`Spawning Host: ${process.env.DOMINION_EXEC_PATH} ${args}`)
 
     const child = spawn(`${process.env.DOMINION_EXEC_PATH}`, args, { stdio: 'pipe', detached: true });
-    handleStreamLines(child.stdout, (data) => log.info(`[${game.name}] ${data}`));
+    const timeRemainingRegex = /^\w*-\w*, Connections\s*(?<CONNECTIONS>\d+),\s*((?<PAUSED>No timer)|Time (?<TIME>\d+\w))\s*(\(quick host\))?$/
+    let lastSeenTime = "";
+    let lastSeenPause = false;
+    handleStreamLines(child.stdout, (data) => {
+        log.info(`[${game.name}] ${data}`);
+        let timeLine = timeRemainingRegex.exec(data);
+        if(timeLine?.groups){
+            let time = timeLine.groups['TIME'];
+            if(time && lastSeenTime != time){
+                lastSeenTime = time;
+                let secondsTilStart = util.getSeconds(timeLine.groups['TIME']);
+                game.state.nextTurnStartTime = new Date().addSeconds(secondsTilStart);
+                updateGameStatus(game);
+            }
+            let paused = timeLine.groups['PAUSED'] != undefined;
+            if(lastSeenPause != paused){
+                game.state.paused = paused;
+                lastSeenPause = paused;
+                updateGameStatus(game);
+            }
+        }
+    });
     handleStreamLines(child.stderr, (data) => log.error(`[${game.name}] ${data}`));
 
     ports[game.settings.server.port] = game;
     child.on('error', (er) => {
         log.error(`child error ${er}`);
-    })
-    
-    const updateInterval = setInterval(() => {
-        if(game.update){
-            try{
-                game.update();
-            }catch(err){
-                log.error(`Error updating game ${game.name} ${err}`);
-            }
-        }else{
-            log.warn(`Skipping update for ${game.name}`);
-        }
-    }, 1000 * 60 * 15);
+    });
+
     child.on('exit', (code, sig) => {
         log.warn(`Game exited! ${game.name}, ${code}, ${sig}`)
         delete game.getProcess;
         if (ports[game.settings.server.port!] === game) {
             ports[game.settings.server.port!] = null;
         }
-        clearInterval(updateInterval);
     });
     log.debug(`Hosted ${game.name} with pid ${child.pid}`);
     game.getProcess = () => child;
     game.pid = child.pid;
+
+    return Promise.withTimeout((resolve, reject) => {
+        child.stdout.on('data', resolve);
+        child.stdout.on('error', reject);
+        child.stderr.on('data', reject);
+        child.stderr.on('error', reject);
+        child.on('exit', reject);
+    }, 2000);
 }
 
-function stopGame(game: Game) {
+async function stopGame(game: Game) {
     log.info(`stopping ${game.name} ${game.pid}`)
     if (game.getProcess) {
+        let proc = game.getProcess();
+        let exited = Promise.withTimeout(resolve => proc.on('exit', resolve), 2000)
+            .catch(reason => { log.warn(`Error waiting for ${game.name} to stop. ${reason}`);
+        });
         process.kill(-game.getProcess().pid);
-        delete game.getProcess;
+        await exited;
+        log.debug(`game exited`);
     }
     if (ports[game.settings.server.port!] === game) {
         ports[game.settings.server.port!] = null;
@@ -262,35 +284,30 @@ function unloadGame(game: Game) {
     }
 }
 
-function deleteGame(game: Game) {
+async function deleteGame(game: Game) {
     log.info(`Deleting ${game.name} ${game.pid}`);
     let childProcess = game.getProcess ? game.getProcess() : null;
     unloadGame(game);
-    game.getGuild!(guild => {
+    let guild = await getGuild(game);
+    if(guild){
         if (game.discord.playerRoleId) {
-            guild.roles.fetch(game.discord.playerRoleId)
+            await guild.roles.fetch(game.discord.playerRoleId)
                 .then(r => r!.delete())
                 .catch(log.error);
         }
         
         if (game.discord.adminRoleId) {
-            guild.roles.fetch(game.discord.adminRoleId)
+            await guild.roles.fetch(game.discord.adminRoleId)
                 .then(r => r!.delete())
                 .catch(log.error);
         }
 
         if (game.discord.channelId) {
-            guild.client.channels.fetch(game.discord.channelId)
+            await guild.client.channels.fetch(game.discord.channelId)
                 .then(c => c.delete())
                 .catch(log.error);
         }
-
-        if (game.discord.gameLobbyChannelId) {
-            guild.client.channels.fetch(game.discord.gameLobbyChannelId)
-                .then(c => c.delete())
-                .catch(log.error);
-        }
-    });
+    }
     let cleanup = () => {
         util.deleteGameSave(game);
         util.deleteJSON(game.name);
@@ -303,76 +320,70 @@ function deleteGame(game: Game) {
     }
 }
 
-function loadGame(name, bot, cb) {
-    util.loadJSON(name, (data, err) => {
-        log.info('Wrapping game');
-        if (err) throw `Error ${err}`;
-        cb(wrapGame(data, bot));
-    });
+async function loadGame(name: string) {
+    let data = await util.loadJSON(name);
+    log.info('Wrapping game');
+    data = adaptGame(data);
+    return wrapGame(data);
 }
 
-function saveGame(game: Game) {
-    util.saveJSON(game.name, game);
+async function saveGame(game: Game) {
+    return util.saveJSON(game.name, game);
 }
 
-function wrapGame(game: Game, bot: Client) {
-    if (game.state.nextTurnStartTime) {
-        game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime);
+export async function getChannel(game: Game){
+    let bot = getDiscordBot();
+    if(game.discord.channelId){
+        let channel: any = bot.channels.fetch(game.discord.channelId);
+        return channel as TextChannel & GuildChannel;
     }
+    return null;
+}
 
-    if (!game.settings.setup.mods) {
-        game.settings.setup.mods = [];
+export async function getGuild(game: Game){
+    let channel = await getChannel(game);
+    if(channel?.guild){
+        return channel.guild;
     }
+    return null;
+}
 
-    let channel: (TextChannel & GuildChannel) | null = null;
-    game.getChannel = (cb) => {
-        if (channel === null) {
-            bot.channels.fetch(game.discord.channelId, true)
-                .then((c:any) => {
-                    channel = c;
-                    cb(c);
-                })
-                .catch(log.error);
-        } else {
-            cb(channel);
-        }
+export function getPlayerForNation(game: Game, nationID: string){
+    for (let userID in game.discord.players) {
+        if (game.discord.players[userID] == nationID)
+            return userID;
     }
+    return null;
+}
 
-    let guild: Guild | null = null;
-    game.getGuild = (cb) => {
-        if (guild === null) {
-            game.getChannel!(ch => {
-                guild = ch.guild;
-                cb(guild);
-            });
-        } else {
-            cb(guild);
-        }
-    }
-    game.save = () => { saveGame(game) };
-    game.getPlayerForNation = (nationId) => {
-        for (let userID in game.discord.players) {
-            if (game.discord.players[userID] == nationId)
-                return userID;
-        }
-        return null;
-    };
-    game.getDisplayName = (nationId) => {
-        let playerId = game.getPlayerForNation(nationId);
-        if (playerId) {
-            let player = bot.users.cache.get(playerId);
-            if (!player) {
-                bot.users.fetch(playerId, true);
-                return 'Loading...';
-            } else {
-                return player.username;
+
+export async function getPlayerDisplayName(game: Game, nationId: string) {
+    let playerId = getPlayerForNation(game, nationId);
+    if (playerId) {
+        let bot = getDiscordBot();
+        let guild = await getGuild(game);
+        if(guild){
+            let guild = await getGuild(game);
+            
+            let guildMember = await guild?.member(playerId)?.fetch(true);
+            
+            if(guildMember){
+                return guildMember.displayName;
             }
         }
-        return '-';
-    };
+        let player = await bot.users.fetch(playerId);
+        if (player) {
+            return player.username;
+        } else {
+            return 'Failed to load';
+        }
+    }
+    return '-';
+};
 
-    for (let userID in game.discord.players) {
-        bot.users.fetch(userID, true);
+function wrapGame(game: Game) {
+    if (game.state.nextTurnStartTime) {
+        game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime);
     }
 
     games[game.name] = game;
@@ -401,7 +412,8 @@ function getLaunchArgs(config: Game) {
 
     // --- turn settings ---
     if (!turns.quickHost) args.push("--noquickhost");
-    if (turns.maxTurnTimeMinutes > 0) {
+    
+    if (turns.maxTurnTimeMinutes > 0 && !turns.paused) {
         args.push("--minutes");
         args.push(turns.maxTurnTimeMinutes);
     }
@@ -409,8 +421,8 @@ function getLaunchArgs(config: Game) {
     //new game settings
     args.push("--noclientstart");
     args.push("--masterpass");
-    args.push(setup.masterPass);
-    args.push("--thrones", setup.thrones[0], setup.thrones[1], setup.thrones[2]);
+    args.push(server.masterPass);
+    args.push("--thrones", `${setup.thrones.level1}`, `${setup.thrones.level2}`, `${setup.thrones.level3}`);
     if (setup.victoryPoints) {
         args.push("--requiredap");
         args.push(setup.victoryPoints);

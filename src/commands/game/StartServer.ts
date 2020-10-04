@@ -20,7 +20,7 @@ new class extends GameCommand{
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         log.info(`Starting ${game.name}`);
-        hostGame(game);
+        await hostGame(game);
     
         return 0;
     }

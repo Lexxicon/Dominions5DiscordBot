@@ -19,23 +19,32 @@ new class extends GameCommand{
         return __filename;
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let playerCount = game.playerCount;
-        let provPerPlayer = Constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
-        log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
-        let provinces = playerCount * provPerPlayer;
-        log.info("provinces " + provinces);
-        let VP =  Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
-        game.settings.setup.victoryPoints = VP;
-        log.info("VP " + VP)
-        game.settings.setup.thrones = [];
-        game.settings.setup.thrones[0] = Math.ceil(VP * 0.60);
-        game.settings.setup.thrones[1] = Math.ceil(VP * 0.35);
-        game.settings.setup.thrones[2] = Math.ceil(VP * 0.15);
-        log.info(game.settings.setup.thrones);
-        saveGame(game);
+        let VP = game.settings.setup.victoryPoints;
+        if(VP < 0){
+            let playerCount = game.playerCount;
+            let provPerPlayer = Constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
+            log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
+            let provinces = playerCount * provPerPlayer;
+            log.info("provinces " + provinces);
+            VP = Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
+            game.settings.setup.victoryPoints = VP;
+            log.info("VP " + VP)
+        }
+        if(game.settings.setup.thrones.level1 < 0){
+            game.settings.setup.thrones.level1 = Math.ceil(VP * 0.60);
+            log.info(`Level 1: ${game.settings.setup.thrones.level1}`);
+        }
+        if(game.settings.setup.thrones.level2 < 0) {
+            game.settings.setup.thrones.level2 = Math.ceil(VP * 0.35);
+            log.info(`Level 2: ${game.settings.setup.thrones.level2}`);
+        }
+        if(game.settings.setup.thrones.level3 < 0){
+            game.settings.setup.thrones.level3 = Math.ceil(VP * 0.15);
+            log.info(`Level 3: ${game.settings.setup.thrones.level3}`);
+        }
+        await saveGame(game);
         log.info("Killing")
         let childProcess = game.getProcess ? game.getProcess() : null;
-        stopGame(game);
         let start = () => {
             log.info("Spawning")
             hostGame(game);
@@ -48,6 +57,8 @@ new class extends GameCommand{
         }else{
             childProcess.on('exit', start);
         }
+        
+        await stopGame(game);
     
         return 0;
     }

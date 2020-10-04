@@ -13,7 +13,7 @@ log.info(``);
 require('./ValidateEnv.js').validate();
 
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
-import { hostGame, loadGame } from './DominionsGame';
+import { getChannel, hostGame, loadGame } from './DominionsGame';
 import * as dominionsStatus from './DominionsStatus';
 import {processGameCommand} from './commands/GameCommandHandler';
 import { GuildMessage } from './global';
@@ -28,6 +28,10 @@ loadAllCommands();
 const bot = new Discord.Client();
 const TOKEN = process.env.TOKEN;;
 const LOBBY_NAME = process.env.DEFAULT_LOBBY_NAME;
+
+export function getDiscordBot(){
+    return bot;
+}
 
 function cleanup(){
     log.info('Goodbye');
@@ -59,11 +63,12 @@ bot.on('ready', () => {
 });
 
 
-bot.on('message', msg => {
+bot.on('message', async msg => {
     if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel) && util.isGuildMessage(msg)){
 
-        let handler: (msg: GuildMessage)=> Promise<number>;
         log.info(msg.channel.name);
+        await msg.react(util.emoji(':thinking:'));
+        let handler: (msg: GuildMessage)=> Promise<number>;
         if (msg.channel.name == LOBBY_NAME) {
             log.info("Handling lobby command");
             handler = lobbyCommandHandler;
@@ -74,48 +79,42 @@ bot.on('message', msg => {
             log.info("Handling server command");
             handler = serverCommandHandler
         }
-
-        let result = 0;
-        msg.react(util.emoji(':thinking:'))
-        .then(r => {
-            return handler(msg);
-        }).then(r => {
-            result = r;
-        }).then( r => {
-            msg.reactions.removeAll()
-            .catch(err => {
-                log.error(err);
-            });
+        try{
+            let result = await handler(msg);
+            await msg.reactions.removeAll();
             if(result >= 0){
-                msg.react(util.emoji(':thumbsup:'));
+                await msg.react(util.emoji(':thumbsup:'));
             }else{
-                msg.react(util.emoji(':thumbsdown:'));
+                await msg.react(util.emoji(':thumbsdown:'));
             }
-        }).catch( err => {
-            msg.reactions.removeAll()
-            .then(() => {
-                return msg.react(util.emoji(':no_entry_sign:'));
-            })
-            .catch(err => {
-                log.error(err);
-            })
-            msg.react(util.emoji(':no_entry_sign:'))
+        } catch(err){
             log.error(err);
-        });
+            await msg.reactions.removeAll();
+            await msg.react(util.emoji(':no_entry_sign:'))
+        }
     }
 });
 
 bot.login(TOKEN).then(s => {
-    util.loadAllGames(f => {
-        log.info(`Restoring ${f}`)
-        loadGame(f, bot, game => {
-            hostGame(game);
-            dominionsStatus.startWatches(game);
-            if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
-                log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
-                util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
+    util.loadAllGames(async f => {
+        try{
+            log.info(`Restoring ${f}`)
+            let game = await loadGame(f);
+            try{
+                await hostGame(game);
+                dominionsStatus.startWatches(game);
+                if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
+                    log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
+                    util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
+                }
+            }catch(err){
+                log.error(`Failed hosting game ${game.name}`);
+                let channel = await getChannel(game);
+                channel?.send(`Failed restoring game ${err}`);
             }
-        });
+        }catch(err){
+            log.error(`failed resoting ${f}, ${err}`);
+        }
     });
 }).catch(err => {
     log.error(err);

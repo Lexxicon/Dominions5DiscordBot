@@ -1,5 +1,5 @@
 import { getLogger } from "log4js";
-import { deleteGame, Game, saveGame, stopGame, hostGame } from "../../DominionsGame";
+import { deleteGame, Game, saveGame, stopGame, hostGame, getPlayerDisplayName } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -25,18 +25,15 @@ new class extends GameCommand{
         if(roleID){
             let role = await msg.guild.roles.fetch(roleID)
             if(role){
-                msg.member.roles.remove(role);
+                await msg.member.roles.remove(role);
             }
         }
         if(game.discord.players[msg.member.id]){
             let nationID = game.discord.players[msg.member.id];
-            let displayName = `${game.getDisplayName(nationID)}`;
+            let displayName = await getPlayerDisplayName(game, nationID);
             delete game.discord.players[msg.member.id];
-            setTimeout(() => {
-                if(game.update) game.update();
-                msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
-            }, 1000);
-            game.save();
+            await saveGame(game);
+            await msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
         }
         return 0;
     }

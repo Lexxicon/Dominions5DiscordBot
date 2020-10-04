@@ -9,30 +9,28 @@ import util from './Util';
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME!;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
-function createChannel(guild: Guild, name: string, reason: string, cb){
+async function createChannel(guild: Guild, name: string, reason: string){
     name = name.toLowerCase();
     log.info('Create channel ' + name);
     if (name === LOBBY_NAME) {
         log.warn('Can\'t create the lobby!');
         return;
     }
-
-    if(util.findChannel(guild, name)){
+    
+    if(guild.channels.cache.find(channel => channel.name == name)){
         log.warn('Channel already exists!');
         return;
     }
 
-    const category = util.findChannel(guild, GAMES_CATEGORY_NAME);
-    guild.channels.create(name, {
+    const category = guild.channels.cache.find(channel => channel.name == GAMES_CATEGORY_NAME);
+    return guild.channels.create(name, {
         type: 'text',
         parent: category?.id,
         reason: reason
-    })
-    .then(cb)
-    .catch(log.error);
+    });
 }
 
-function deleteChannel(guild: Guild, name: string, reason: string){
+async function deleteChannel(guild: Guild, name: string, reason: string){
     name = name.toLowerCase().replace(' ', '-');
 
     log.info('delete ' + name);
@@ -41,64 +39,63 @@ function deleteChannel(guild: Guild, name: string, reason: string){
         return;
     }
 
-    let channel = util.findChannel(guild, name);
+    let channel = guild.channels.cache.find(channel => channel.name == name);
     if (!channel) {
         log.warn(`Failed to find channel: ${name}`)
         return;
     }
 
-    const category = util.findChannel(guild, GAMES_CATEGORY_NAME);
+    const category = guild.channels.cache.find(channel => channel.name == GAMES_CATEGORY_NAME);
     if (channel.parent !== category) {
         log.warn(`Can\'t delete channels not in the game category! ${channel.name}`);
         return;
     } 
     
     log.info(`About to delete ${channel}`);
-    channel.delete(reason);
+    return channel.delete(reason);
 }
 
-function createNewGame(msg: GuildMessage, era: any){
+async function createNewGame(msg: GuildMessage, era: any){
     let gameName = util.generateName();
     log.info(`Creating ${gameName}`);
 
     log.info(`Creating channel`);
-    createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`, (c) => {
-        log.info(`Creating game`);
-        let game = create(c, gameName, msg.client);
+    let channel = await createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`);
+    if(!channel) throw `Failed to create game ${gameName}`;
 
-        if(era) game.settings.setup.era = era;
-        game.discord.gameLobbyChannelId = c.id;
-        const guild: Guild = msg.guild;
+    log.info(`Creating game`);
+    let game = create(channel, gameName);
 
-        guild.roles.create({
-            data: {
-                name:`${gameName}-player`,
-                mentionable: true
-            }
-        }).then(r => {
-            game.discord.playerRoleId = r.id;
-            return msg.guild.roles.create({
-                data: {
-                    name: `${gameName}-admin`,
-                    mentionable: true
-                }
-            })
-        }).then(r => {
-            game.discord.adminRoleId = r.id;
-            log.info(`Saving game`);
-            util.saveJSON(game.name, game);
-            log.info(`Hosting game`);
-            hostGame(game);
-            setTimeout(() => {
-                log.info(`Watching game`);
-                status.startWatches(game);
-                util.saveJSON(game.name, game);
-            }, 3000);
-        }).catch(err => {
-            log.error(err);
-            throw err;
-        });
+    if(era) game.settings.setup.era = era;
+    const guild: Guild = msg.guild;
+
+    let playerRole = await guild.roles.create({
+        data: {
+            name:`${gameName}-player`,
+            mentionable: true
+        }
+    })
+    
+    game.discord.playerRoleId = playerRole.id;
+    let adminRole = await msg.guild.roles.create({
+        data: {
+            name: `${gameName}-admin`,
+            mentionable: true
+        }
     });
+
+    msg.member.roles.add(adminRole);
+
+    game.discord.adminRoleId = adminRole.id;
+    log.info(`Saving game`);
+    util.saveJSON(game.name, game);
+    log.info(`Hosting game`);
+    await hostGame(game);
+    setTimeout(() => {
+        log.info(`Watching game`);
+        status.startWatches(game);
+        util.saveJSON(game.name, game);
+    }, 3000);
 }
 
 let pingMsgs = {};

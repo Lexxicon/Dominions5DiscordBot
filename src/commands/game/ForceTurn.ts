@@ -19,10 +19,10 @@ new class extends GameCommand{
         return __filename;
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        log.debug(`forcing turn with arg ${arg}`)
+        log.debug(`forcing turn with arg ${arg? arg : 'default'}`)
         let time = Util.getSeconds(arg || '15s');
-        game.state.nextTurnStartTime = new Date(Date.now() + time * 1000)
-        Util.domcmd.startGame({name: game.name}, time);
+        game.state.nextTurnStartTime = new Date().addSeconds(time);
+        await Util.domcmd.startGame({name: game.name}, time);
         await msg.channel.send(`Ending turn in ${time} seconds!`);
         return 0;
     }

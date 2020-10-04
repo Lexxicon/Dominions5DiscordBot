@@ -1,4 +1,4 @@
-import { Game } from "../../DominionsGame";
+import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -39,10 +39,9 @@ new class extends GameCommand{
                     }
                 }
                 game.discord.players[msg.member.id] = nationID;
-                setTimeout(() => {
-                    if(game.update) game.update();
-                    msg.channel.send(`Joined ${game.getDisplayName(nationID)} as ${races[game.settings.setup.era][nationID]}`);
-                }, 1000);
+                await saveGame(game);
+                let name = await getPlayerDisplayName(game, nationID);
+                await msg.channel.send(`Joined ${name} as ${races[game.settings.setup.era][nationID]}`);
             }else {
                 await msg.channel.send(`Invalid race for given era! era: ${game.settings.setup.era}, nationID: ${nationID}`)
                 return -1;

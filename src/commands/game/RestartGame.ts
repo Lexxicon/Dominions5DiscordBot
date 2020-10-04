@@ -13,15 +13,16 @@ new class extends GameCommand{
         return Permission.GAME_ADMIN;
     }
     getName(): string[] {
-        return ['stopServer'];
+        return ['restartServer'];
     }
     getPath(): string {
         return __filename;
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         log.info(`Killing ${game.name} ${game.pid}`);
-        stopGame(game);
-    
+        await stopGame(game);
+        log.info("Spawning")
+        await hostGame(game);
         return 0;
     }
 }

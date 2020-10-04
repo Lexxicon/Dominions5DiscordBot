@@ -13,28 +13,15 @@ new class extends GameCommand{
         return Permission.GAME_ADMIN;
     }
     getName(): string[] {
-        return ['restartServer'];
+        return ['stopServer'];
     }
     getPath(): string {
         return __filename;
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-
         log.info(`Killing ${game.name} ${game.pid}`);
-        let gameProcess = game.getProcess ? game.getProcess() : null;
-        stopGame(game);
-        let host = () => {
-            log.info("Spawning")
-            hostGame(game);
-        };
-        if(!gameProcess){
-            log.debug("Process not found. Waiting instead");
-            //wait for game to close
-            setTimeout(host, 10000);
-        }else{
-            log.debug("Hooking exit");
-            gameProcess.on('exit', () => setTimeout(host, 1000));
-        }
+        await stopGame(game);
+    
         return 0;
     }
 }

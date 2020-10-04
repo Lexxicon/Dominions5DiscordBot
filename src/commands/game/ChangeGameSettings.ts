@@ -3,14 +3,13 @@ import { deleteGame, Game, saveGame, stopGame, hostGame } from "../../DominionsG
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
-import * as Constants from "../../Constants";
 import Util from "../../Util";
 
 const log = getLogger();
 
 new class extends GameCommand{
     getNeededPermission(): Permission {
-        return Permission.GAME_ADMIN;
+        return Permission.MASTER;
     }
     getName(): string[] {
         return ['config'];
@@ -54,8 +53,8 @@ new class extends GameCommand{
     
                 case 'setTurnDuration':
                     game.settings.turns.maxTurnTimeMinutes = Number(args[1]);
-                    Util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
-                    saveGame(game);
+                    await Util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
+                    await saveGame(game);
                 return 0;
     
                 case 'set':{
@@ -67,7 +66,7 @@ new class extends GameCommand{
                     }
                     log.debug(`Result settings: ${settings}`);
                     settings[settingsPath[settingsPath.length - 1]] = args[2];
-                    saveGame(game);
+                    await saveGame(game);
                     return 0;
                 }
                 case 'get':{
@@ -79,7 +78,7 @@ new class extends GameCommand{
                         lastValue = p;
                         settings = settings[p];
                     }
-                    msg.channel.send(`Value of ${lastValue}=${settings}`);
+                    await msg.channel.send(`Value of ${lastValue}=${settings}`);
                     return 0;
                 }
                 default: 

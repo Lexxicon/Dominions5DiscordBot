@@ -3,32 +3,31 @@ import { getLogger } from "log4js";
 
 const log = getLogger();
 
-function initServer(msg: GuildMessage){
+async function initServer(msg: GuildMessage){
     if(!msg.guild){
         return -1;
     }
-    msg.guild.roles.fetch()
-        .then(roles => {
-            if(roles.cache.filter( (v) => v.name == `${process.env.DEFAULT_GAME_MASTER}`).size == 0){
-                log.info(`Configuring ${msg.guild?.name}`);
-                roles.create({
-                    data:{
-                        name: `${process.env.DEFAULT_GAME_MASTER}`
-                    }
-                }).then( role => {
-                    msg.member?.roles.add(role);
-                }).then(() => {
-                    msg.guild?.channels.create(`${process.env.DEFAULT_GAMES_CATEGORY_NAME}`, {
-                        type: 'category'
-                    }).then(category => {
-                        category.guild.channels.create(`${process.env.DEFAULT_LOBBY_NAME}`, {
-                           parent: category
-                       });
-                    })
-                }).catch(console.error);
-            }
-        })
-        .catch(console.error);
+    let roles = await msg.guild.roles.fetch()
+    if(roles.cache.filter( (v) => v.name == `${process.env.DEFAULT_GAME_MASTER}`).size == 0){
+        log.info(`Configuring ${msg.guild?.name}`);
+        let role = await roles.create({
+                data:{
+                    name: `${process.env.DEFAULT_GAME_MASTER}`
+                }
+            });
+        log.info(`adding role`);
+        await msg.member.roles.add(role);
+        
+        log.info(`creating category`);
+        let category = await msg.guild?.channels.create(`${process.env.DEFAULT_GAMES_CATEGORY_NAME}`, {
+                type: 'category'
+            });
+
+        log.info(`creating lobby`);
+        category.guild.channels.create(`${process.env.DEFAULT_LOBBY_NAME}`, {
+            parent: category
+        });
+    }
     return 1;
 }
 

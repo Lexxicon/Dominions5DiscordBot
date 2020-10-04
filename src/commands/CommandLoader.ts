@@ -3,7 +3,7 @@ import fs from "fs";
 
 const loadingErrors:string[] = [];
 
-async function* walk(dir) {
+async function* walk(dir: string) {
     for await (const d of await fs.promises.opendir(dir)) {
         const entry = path.join(dir, d.name);
         if (d.isDirectory()) yield* walk(entry);
@@ -22,11 +22,9 @@ async function load() {
         }
     }
 }
-export function loadAllCommands() {
-    load()
-    .then( () => {
-        if(loadingErrors.length > 0){
-            throw `Errors registering commands ${loadingErrors}`;
-        }
-    }).catch(e => console.log(e));
+export async function loadAllCommands() {
+    await load();
+    if(loadingErrors.length > 0){
+        throw `Errors registering commands ${loadingErrors}`;
+    }
 }

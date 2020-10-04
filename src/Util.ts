@@ -4,7 +4,9 @@ import { Guild, Message, NewsChannel, TextChannel } from "discord.js";
 import fs from "fs";
 import { GuildMessage } from "./global";
 import _ from "lodash";
-const log = require("log4js").getLogger();
+import { Game } from './DominionsGame';
+import { getLogger } from 'log4js';
+const log = getLogger();
 
 const config = require('../res/config.json');
 
@@ -20,18 +22,13 @@ fs.mkdirSync(`${process.env.BOT_SAVE_PATH}`, {recursive: true});
 fs.mkdirSync(`${process.env.BOT_ARCHIVE_PATH}`, {recursive: true});
 fs.mkdirSync(`${process.env.DOM5_CONF}`, {recursive: true});
 
-function domcmd (commands: string, game, cb?: () =>void) {
+async function domcmd (commands: string, game: Game) {
     const path = `${process.env.DOM5_CONF}/savedgames/${game.name}/domcmd`;
-    fs.writeFile(path, commands, (err) => {
-        if(err && game.discord.channel) {
-            game.discord.channels.send('Error while executing dom command! Check logs for more details');
-            log.warn(`Error while executing dom command for ${game.name}! \n\n ${err}`);
-        }
-
-        if(cb){
-            cb();
-        }
-    });
+    try{
+        await fs.promises.writeFile(path, commands);
+    }catch(err){
+        log.warn(`Error while executing dom command for ${game.name}! \n\n ${err}`);
+    }
 }
 
 function emoji(input: string){
@@ -41,38 +38,32 @@ function emoji(input: string){
     return input;
 }
 
-function saveJSON(name: string, data: any){
-    fs.writeFile(`${process.env.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data), 'utf8', err => {
-        if(err) {
-            log.error(err);
-        }else{
-            log.info(`Saved ${name}`);
-        }
-    });
+async function saveJSON(name: string, data: any){
+    try{
+        await fs.promises.writeFile(`${process.env.BOT_SAVE_PATH}${name}.json`, JSON.stringify(data));
+        log.info(`Saved ${name}`);
+    }catch(err){
+        log.error(err);
+    }
 }
 
-function loadJSON(name: string, cb: (data: any, err?: Error) => void){
+async function loadJSON(name: string){
     name = name.endsWith('.json') ? name : `${name}.json`;
     log.info(`loading ${name}`);
-    fs.readFile(`${process.env.BOT_SAVE_PATH}${name}`, 'utf8', (err, data) => {
-        if(err) cb(data, err);
-        else {
-            try{
-                let json = JSON.parse(data);
-                cb(json);
-            } catch (e) {
-                log.error(`Error loading ${name}`);
-                if (e instanceof SyntaxError) {
-                    printError(e, true);
-                } else {
-                    printError(e, false);
-                }
-            }
+    try{
+        let data = await fs.promises.readFile(`${process.env.BOT_SAVE_PATH}${name}`, 'utf8');
+        return JSON.parse(data);
+    }catch(err){
+        log.error(`Error loading ${name}`);
+        if (err instanceof SyntaxError) {
+            printError(err, true);
+        } else {
+            printError(err, false);
         }
-    });
+    }
 }
 
-function backupGame(name: string){
+async function backupGame(name: string){
     const path = `${process.env.BOT_ARCHIVE_PATH}${name}`;
 
     let backupActions: any[] = [];
@@ -128,13 +119,21 @@ function printError (error: Error, explicit: boolean) {
     log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}, ${error.stack}`);
 }
 
-function deleteJSON(name: string) {
-    fs.unlink(`${process.env.BOT_SAVE_PATH}${name}.json`, (err) => log.error(err));
+async function deleteJSON(name: string) {
+    try{
+        await fs.promises.unlink(`${process.env.BOT_SAVE_PATH}${name}.json`);
+    }catch(err){
+        log.error(err);
+    }
 }
 
-function deleteGameSave(game) {
+async function deleteGameSave(game) {
     const path = `${process.env.BOT_SAVE_PATH}${game.name}`;
-    fs.rmdir(path, {recursive: true}, (err) => {if(err) { log.error(err)}});
+    try{
+        await fs.promises.rmdir(path, {recursive: true});
+    }catch(err){
+        log.error(err)
+    }
 }
 
 function loadAllGames(cb: (gameFile: string)=>void){
@@ -160,6 +159,10 @@ function generateName(){
     throw 'Failed to create valid name after 30 tries';
 }
 
+const SEC_IN_MIN = 60;
+const SEC_IN_HOUR = SEC_IN_MIN * 60;
+const SEC_IN_DAY = SEC_IN_HOUR * 24;
+
 function getSeconds(str: string) {
     if(str.startsWith('-')) throw `Negative times aren't allowed! ${str}`
     let seconds = 0;
@@ -167,11 +170,32 @@ function getSeconds(str: string) {
     let hours = str.match(/(\d+)\s*h/);
     let minutes = str.match(/(\d+)\s*m/);
     let rawSeconds = str.match(/(\d+)\s*s/);
-    if (days) { seconds += parseInt(days[1])*86400; }
-    if (hours) { seconds += parseInt(hours[1])*3600; }
-    if (minutes) { seconds += parseInt(minutes[1])*60; }
+    if (days) { seconds += parseInt(days[1])*SEC_IN_DAY; }
+    if (hours) { seconds += parseInt(hours[1])*SEC_IN_HOUR; }
+    if (minutes) { seconds += parseInt(minutes[1])*SEC_IN_MIN; }
     if (rawSeconds) { seconds += parseInt(rawSeconds[1]); }
     return seconds;
+}
+
+
+
+const MINUTE_THRESHOLD = getSeconds('2m');
+const HOUR_THRESHOLD = getSeconds('2h');
+const DAYS_THRESHOLD = getSeconds('2d');
+
+function getDisplayTime(seconds: number){
+    let mapper = (unit: number) => Math.floor(seconds/unit);
+
+    if(seconds > DAYS_THRESHOLD){
+        return `${mapper(SEC_IN_DAY)} days`;
+    }
+    if(seconds > HOUR_THRESHOLD){
+        return `${mapper(SEC_IN_HOUR)} hours`;
+    }
+    if(seconds > MINUTE_THRESHOLD){
+        return `${mapper(SEC_IN_MIN)} minutes`;
+    }
+    return `${mapper(1)} seconds`;
 }
 
 function getAvailableMods(cb: (files: string[]) => void){
@@ -179,51 +203,45 @@ function getAvailableMods(cb: (files: string[]) => void){
     (err, files) => cb(files.filter(f => f.endsWith(".dm"))));
 }
 
-function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
+async function getStaleNations(game: Game) {
     let stales : string[] = [];
-    let staleThreshold = game.settings.turns.maxTurnTime * game.settings.turns.maxHoldups;
+    let staleThreshold = game.settings.turns.maxTurnTimeMinutes * game.settings.turns.maxHoldUps;
     if(game.state.turn < 2) {
-        cb(null, stales);
-        return;
+        return stales;
     }
 
     if(staleThreshold > 0){
         let staleTime = new Date(game.state.nextTurnStartTime);
         if(staleTime.getSecondsFromNow() < 0){
             log.debug(`Game hasn't started yet ${game.name}`)
-            cb(null, []);
+            return stales;
         }
-        staleTime.addHours(-staleThreshold);
-        staleTime.addHours(-game.settings.turns.maxTurnTime);
+        staleTime.addMinutes(-staleThreshold);
+        staleTime.addMinutes(-game.settings.turns.maxTurnTimeMinutes);
 
-        fs.readdir(`${process.env.DOM5_CONF}/savedgames/${game.name}`, (err, files) => {
-            if(err || files.length == 0){
-                cb(err, stales);
-                return;
+        try{
+            let files = await fs.promises.readdir(`${process.env.DOM5_CONF}/savedgames/${game.name}`);
+
+            if(files.length == 0){
+                return stales;
             }
-            let count = files.length;
-            files.forEach(file => {
+            for(let file of files){
                 if(file.endsWith('.2h')){
-                    fs.stat(`${process.env.DOM5_CONF}/savedgames/${game.name}/${file}`, (err, stat) => {
+                    try{
+                        let stat = await fs.promises.stat(`${process.env.DOM5_CONF}/savedgames/${game.name}/${file}`);
                         if(stat && stat.ctime < staleTime){
                             stales.push(file.substr(0, file.indexOf('.2h')));
                         }
-                        count--;
-                        if(count == 0){
-                            cb(err, stales);
-                        }
-                    });
-                }else{
-                    count--;
-                    if(count == 0){
-                        cb(err, stales);
+                    }catch(e){
+                        log.error(`Erro getting stats ${e}`);
                     }
                 }
-            })
-        });
-    }else{
-        cb(null, stales);
+            }
+        }catch(err){
+            log.error(err);
+        }
     }
+    return stales;
 }
 
 function isGuildMessage(message: Message): message is GuildMessage{
@@ -234,22 +252,21 @@ function isGuildMessage(message: Message): message is GuildMessage{
 }
 
 export = {
-    findChannel: function (guild: Guild, name: string) {
-        return guild.channels.cache.find(c => c.name === name);
-    },
     domcmd: {
-        raw: function(game, arg) {domcmd(arg, game)},
-        startGame: function(game, seconds = 15, cb?: () => void){
-            domcmd(`settimeleft ${seconds}`, game, cb);
+        raw: async (game:Game, arg: any) => { return domcmd(arg, game)},
+        startGame: async (game, seconds = 15) => {
+            return domcmd(`settimeleft ${seconds}`, game);
         },
-        setQuickHost: (game, quickHost)=>{
-            domcmd(`setquickhost ${quickHost ? 1 : 0}`, game);
+        setQuickHost: async (game:Game, quickHost: boolean)=>{
+            return domcmd(`setquickhost ${quickHost ? 1 : 0}`, game);
         },
-        setInterval: (game, interval)=>{
-            domcmd(`setinterval ${interval}`, game);
+        setInterval: async (game:Game, interval: number)=>{
+            return domcmd(`setinterval ${interval}`, game);
         },
-        setPause: (game, pause)=>{
-            domcmd(`setpause ${pause ? 1 : 0}`, game);
+        setPause: async (game:Game, pause: boolean)=>{
+            for(let i = 0; i < 7; i++){
+                await domcmd(`setpause ${i} ${pause ? 1 : 0}`, game);
+            }
         }
     },
     emoji,
@@ -263,5 +280,6 @@ export = {
     getAvailableMods,
     getStaleNations,
     backupGame,
-    isGuildMessage
+    isGuildMessage,
+    getDisplayTime,
 };

@@ -1,5 +1,5 @@
 import { getLogger } from "log4js";
-import { deleteGame, Game } from "../../DominionsGame";
+import { Game, saveGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -12,13 +12,18 @@ new class extends GameCommand{
         return Permission.GAME_ADMIN;
     }
     getName(): string[] {
-        return ['deleteGame'];
+        return ['resume'];
     }
     getPath(): string {
         return __filename;
     }
     async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        await deleteGame(game);
+        game.settings.turns.paused = false;
+        await Util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
+        await saveGame(game);
+        await msg.channel.send(`Game Resumed`);
+        log.info(`Resumed ${game.name}`);
+    
         return 0;
     }
 }
