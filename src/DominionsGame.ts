@@ -231,6 +231,7 @@ function hostGame(game: Game) {
         }
     }, 1000 * 60 * 15);
     child.on('exit', (code, sig) => {
+        log.warn(`Game exited! ${game.name}, ${code}, ${sig}`)
         delete game.getProcess;
         if (ports[game.settings.server.port!] === game) {
             ports[game.settings.server.port!] = null;
