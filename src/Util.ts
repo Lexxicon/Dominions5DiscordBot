@@ -197,7 +197,7 @@ function getStaleNations(game, cb: (err: any, stales: string[]) => void) {
         staleTime.addHours(-game.settings.turns.maxTurnTime);
 
         fs.readdir(`${process.env.DOM5_CONF}/savedgames/${game.name}`, (err, files) => {
-            if(files.length == 0){
+            if(err || files.length == 0){
                 cb(err, stales);
                 return;
             }

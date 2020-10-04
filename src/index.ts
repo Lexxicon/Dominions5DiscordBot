@@ -2,7 +2,7 @@ require('dotenv').config();
 require('source-map-support').install();
 require('./Prototypes.js');
 
-import { getLogger } from 'log4js';
+import { getLogger, shutdown } from 'log4js';
 const log = getLogger();
 
 
@@ -31,6 +31,7 @@ const LOBBY_NAME = process.env.DEFAULT_LOBBY_NAME;
 
 function cleanup(){
     log.info('Goodbye');
+    shutdown();
 }
 
 // do app specific cleaning before exiting
