@@ -1,10 +1,10 @@
 import { getLogger } from "log4js";
-import { deleteGame, Game, saveGame, stopGame, hostGame } from "../../DominionsGame";
+import * as Constants from "../../Constants";
+import { Game, hostGame, saveGame, stopGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
-import { GameCommand } from "../GameCommandHandler";
-import * as Constants from "../../Constants";
 import Util from "../../Util";
+import { GameCommand } from "../GameCommandHandler";
 
 const log = getLogger();
 

@@ -1,5 +1,5 @@
 import { getLogger } from "log4js";
-import { Game, stopGame } from "../../DominionsGame";
+import { Game } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -8,18 +8,19 @@ const log = getLogger();
 
 new class extends GameCommand{
     getNeededPermission(): Permission {
-        return Permission.GAME_ADMIN;
+        return Permission.PLAYER;
     }
     getName(): string[] {
-        return ['stopServer'];
+        return ['listAddedMods'];
     }
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        log.info(`Killing ${game.name} ${game.pid}`);
-        await stopGame(game);
-    
+    async execute(msg: GuildMessage, game: Game, mod: string): Promise<number> {
+        msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
+        game.settings.setup.mods.forEach(element => {
+            log.info(element);
+        });
         return 0;
     }
 }

@@ -6,10 +6,10 @@ import { GuildMessage } from '../global';
 import { checkPermission, Permission } from '../Permissions';
 import _ from "lodash";
 
+const log = getLogger();
 
 const registry:{[index: string]: GameCommand} = {};
 const loadingErrors:string[] = [];
-const log = getLogger();
 
 export abstract class GameCommand {
     
@@ -22,7 +22,7 @@ export abstract class GameCommand {
             if(registry[name]){
                 loadingErrors.push(`Duplicate command! ${this.getName()} ${this.getPath()}`);
             }else{
-                log.debug(`Registered ${name}`)
+                log.debug(`Registered ${name}`);
                 this.value[name] = this;
             }
         }

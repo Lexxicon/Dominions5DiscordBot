@@ -1,10 +1,8 @@
 import { getLogger } from "log4js";
-import { deleteGame, Game, saveGame, stopGame, hostGame, getPlayerDisplayName } from "../../DominionsGame";
+import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
-import * as Constants from "../../Constants";
-import Util from "../../Util";
 
 const races = require("../../../res/races.json");
 
