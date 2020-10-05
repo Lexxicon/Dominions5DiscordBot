@@ -1,4 +1,5 @@
 import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
+import { updateGameStatus } from "../../DominionsStatus";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -29,6 +30,7 @@ new class extends GameCommand{
             game.discord.players[msg.member.id] = nationID;
             await saveGame(game);
             let displayName = await getPlayerDisplayName(game, nationID);
+            await updateGameStatus(game);
             await msg.channel.send(`Joined ${displayName} as ${races[game.settings.setup.era][nationID]}`);
         }
         return 0;

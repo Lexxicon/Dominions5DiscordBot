@@ -1,5 +1,6 @@
 import { getLogger } from "log4js";
 import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
+import { updateGameStatus } from "../../DominionsStatus";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -31,6 +32,7 @@ new class extends GameCommand{
             let displayName = await getPlayerDisplayName(game, nationID);
             delete game.discord.players[msg.member.id];
             await saveGame(game);
+            await updateGameStatus(game);
             await msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
         }
         return 0;
