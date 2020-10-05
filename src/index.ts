@@ -100,12 +100,13 @@ bot.login(TOKEN).then(s => {
         try{
             log.info(`Restoring ${f}`)
             let game = await loadGame(f);
+            let nextTurnStartTime = game.state.nextTurnStartTime;
             try{
                 await hostGame(game);
                 dominionsStatus.startWatches(game);
-                if(game.state.nextTurnStartTime && game.state.nextTurnStartTime.getSecondsFromNow() > 60){
-                    log.info(`Next turn for ${game.name} scheduled at ${game.state.nextTurnStartTime}`);
-                    util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());
+                if(nextTurnStartTime && nextTurnStartTime.getSecondsFromNow() > 60){
+                    log.info(`Next turn for ${game.name} scheduled at ${nextTurnStartTime}`);
+                    util.domcmd.startGame(game, nextTurnStartTime.getSecondsFromNow());
                 }
             }catch(err){
                 log.error(`Failed hosting game ${game.name}`);
