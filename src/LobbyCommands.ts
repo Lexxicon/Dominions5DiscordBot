@@ -113,13 +113,13 @@ async function handleCommand(msg: GuildMessage): Promise<number>{
     const arg = split >= input.length ? '' : input.substring(split + 1);
     switch (command) {
         case 'host':
-            createNewGame(msg, arg);
+            await createNewGame(msg, arg);
             break;
         case 'delete':
-            deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
+            await deleteChannel(msg.guild, arg, `Deleted by request of ${msg.author.username}`);
             break;
         case 'roles':
-            msg.guild.roles.fetch()
+            await msg.guild.roles.fetch()
                 .then(role => {
                     log.info(role);
                     log.info(`There are ${role.cache.size} roles.`);
