@@ -3,6 +3,7 @@ import { Game, saveGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
+import AsciiTable from 'ascii-table';
 import Util from "../../Util";
 
 const log = getLogger();
@@ -50,8 +51,13 @@ new class extends GameCommand{
             }
 
             let rolls = result.wins + result.losses;
+            let table = new AsciiTable(`${atk} vs ${def}`);
+            table.addRow('Rolls', rolls);
+            table.addRow('Wins', result.wins);
+            table.addRow('Losses', result.losses);
+            table.addRow('Win %', ((result.wins/rolls)*100).toFixed(2));
 
-            await msg.channel.send(`Result over ${rolls} rolls:\nWins: ${result.wins}\nLosses: ${result.losses}\nPercentage: ${((result.wins/rolls)*100).toFixed(2)}%`);
+            await msg.channel.send(`\`\`\`\n${table.toString()}\`\`\``);
         }
         return 0;
     }
