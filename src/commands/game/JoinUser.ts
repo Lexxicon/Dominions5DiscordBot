@@ -1,5 +1,6 @@
 import { getLogger } from "log4js";
 import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
+import { updateGameStatus } from "../../DominionsStatus";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
@@ -43,6 +44,7 @@ new class extends GameCommand{
                 await saveGame(game);
                 let name = await getPlayerDisplayName(game, nationID);
                 log.info(`Joined ${name} as ${nationID}`);
+                await updateGameStatus(game);
                 await msg.channel.send(`Joined ${name} as ${races[game.settings.setup.era][nationID]}`);
             }else {
                 await msg.channel.send(`Invalid race for given era! era: ${game.settings.setup.era}, nationID: ${nationID}`)
