@@ -9,7 +9,7 @@ const log = getLogger();
 const VAL_REGEX = /(?<ATK>\d+)\s*vs?\s*(?<DEF>\d+)/;
 new class extends GameCommand{
     getNeededPermission(): Permission {
-        return Permission.ANY;
+        return Permission.PLAYER;
     }
     getName(): string[] {
         return ['drn'];
