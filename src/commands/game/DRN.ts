@@ -52,11 +52,11 @@ new class extends GameCommand{
             result.values = result.values.sort((a, b) => a - b);
             let rolls = result.wins + result.losses;
             
-            let ones: number[] = [];
+            let zero: number[] = [];
             let breakdown: number[] = [];
             let granularity = 30;
             for(let i = 0; i < granularity; i++){
-                ones[i] = 1;
+                zero[i] = 0;
                 let index = Math.floor((i/granularity) * result.values.length);
                 //exclude the lowest and highest rolls
                 index = Math.max(10, Math.min(result.values.length - 10, index));
@@ -71,7 +71,7 @@ new class extends GameCommand{
             table.addRow('Win %', ((result.wins/rolls)*100).toFixed(2));
 
             let tableStr = table.toString().split('\n') as string[];
-            let graph = AsciiChart.plot([ones, breakdown], {height: tableStr.length}).split('\n') as string[];
+            let graph = AsciiChart.plot([zero, breakdown], {height: tableStr.length}).split('\n') as string[];
             let output: string[] = [];
             output.push('```');
             for(let i = 0; i < tableStr.length; i++){
