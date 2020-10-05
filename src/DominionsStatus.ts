@@ -312,7 +312,7 @@ async function updateGameStatus(game: Game){
 
     let blockPingTime = new Date(game.state.nextTurnStartTime).addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
     log.debug(`Stale ping at ${blockPingTime}`);
-    if(blockPingTime.getTime() < new Date().getTime() && game.state.turn > 0){
+    if(blockPingTime.getTime() < new Date().getTime() && game.state.turn > 0 && !game.state.paused){
         await pingBlockingPlayers(game);
     }else{
         game.state.notifiedBlockers = false;

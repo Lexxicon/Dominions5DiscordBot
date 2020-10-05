@@ -433,6 +433,8 @@ function getLaunchArgs(config: Game) {
     }
     if (constants.SIMPLE_RAND_MAP[setup.map]) {
         args = args.concat(constants.SIMPLE_RAND_MAP[setup.map]);
+        args.push('--seapart');
+        args.push('15');
     } else {
         args.push("--mapfile");
         args.push(setup.map);
@@ -444,6 +446,7 @@ function getLaunchArgs(config: Game) {
     }
     if (setup.disciples) {
         args.push("--teamgame");
+        args.push("--clustered")
     }
     args.push("--newgame")
     args = args.concat(constants.ERA[setup.era]);
