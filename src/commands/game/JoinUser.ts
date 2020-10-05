@@ -1,9 +1,11 @@
+import { getLogger } from "log4js";
 import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import { GameCommand } from "../GameCommandHandler";
 
 const races = require("../../../res/races.json");
+const log = getLogger();
 
 new class extends GameCommand{
     getNeededPermission(): Permission {
@@ -22,7 +24,6 @@ new class extends GameCommand{
 
             if(role){
                 await msg.member!.roles.add(role);
-                return 1;
             }else{
                 throw `failed to find player role! ${game.name} ${roleID}`
             }
@@ -41,6 +42,7 @@ new class extends GameCommand{
                 game.discord.players[msg.member.id] = nationID;
                 await saveGame(game);
                 let name = await getPlayerDisplayName(game, nationID);
+                log.info(`Joined ${name} as ${nationID}`);
                 await msg.channel.send(`Joined ${name} as ${races[game.settings.setup.era][nationID]}`);
             }else {
                 await msg.channel.send(`Invalid race for given era! era: ${game.settings.setup.era}, nationID: ${nationID}`)
