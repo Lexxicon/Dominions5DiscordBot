@@ -2,16 +2,10 @@
     "appenders": {
         "console": {
           "type": "console", 
-          "level": "info",
           "layout": {
             "type": "pattern", 
             "pattern": "%d %p %c %f{2}:%l %m"
           }
-        },
-        "consoleFilter":{
-          "type": "logLevelFilter",
-          "level": "INFO",
-          "appender": "console"
         },
         "file": { 
             "type": "dateFile", 
@@ -26,7 +20,7 @@
       },
       "categories": {
         "default": { 
-            "appenders": ["consoleFilter", "file"], 
+            "appenders": ["console", "file"], 
             "level": "debug", 
             "enableCallStack": true 
         }
