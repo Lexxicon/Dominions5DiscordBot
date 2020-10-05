@@ -42,7 +42,7 @@ new class extends GameCommand{
                     }
                     log.debug(`Result settings: ${settings}`);
                    
-                    settings[settingsPath[settingsPath.length - 1]] = JSON.parse(args.slice(1).join(' '));
+                    settings[settingsPath[settingsPath.length - 1]] = JSON.parse(args.slice(2).join(' '));
                     await saveGame(game);
                     return 0;
                 }
