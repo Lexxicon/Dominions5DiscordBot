@@ -152,9 +152,9 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             if(uploaded && claimed){
                 state = constants.EMOJI[":checkBox:"];
             }else if(claimed && !uploaded) {
-                state = 'Upload Pretender';
+                state = 'Upload';
             }else if(!claimed && uploaded) {
-                state = 'Missing Claim';
+                state = 'Claim';
             }else{
                 state = '';
             }
