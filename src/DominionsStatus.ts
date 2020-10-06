@@ -44,7 +44,8 @@ class GameState {
         turnState: {
             id: number,
             ready: boolean,
-            display: string
+            display: string,
+            short: string
         },
     }[] = [];
 }
@@ -64,7 +65,8 @@ class PlayerStatus{
     turnState = {
         id: 0,
         ready: false,
-        display: ""
+        display: "",
+        short: ""
     };
 }
 
@@ -121,7 +123,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
             return;
         }
-        activeNames.push(`[${s.nationId}] ${s.name}`);
+        activeNames.push(`${s.nationId} ${s.name}`);
 
         let playerName = "";
 
@@ -148,20 +150,20 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             let uploaded = s.playerStatus.id != 0;
             let claimed = getPlayerForNation(game, `${s.nationId}`) != null;
             if(uploaded && claimed){
-                state = 'Ready';
+                state = constants.EMOJI[":checkBox:"];
             }else if(claimed && !uploaded) {
                 state = 'Upload Pretender';
             }else if(!claimed && uploaded) {
                 state = 'Missing Claim';
             }else{
-                state = '-';
+                state = '';
             }
         }else {
             if(s.playerStatus.id == 1){
                 if(game.state.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
                     state = "Stale";
                 }else{
-                    state = s.turnState.display;
+                    state = s.turnState.short;
                 }
             }else{
                 state = '-';

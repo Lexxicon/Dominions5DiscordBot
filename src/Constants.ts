@@ -14,6 +14,9 @@ export const EMOJI = {
         ":eight:":      "8️⃣",
         ":nine:":       "9️⃣",
         ":ten:":        "🔟",
+        ":clock3:":     "🕒",
+        ":turtle:":     "🐢",
+        ":checkBox:":   "☑️",
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
         ":thinking:":   "🤔",
@@ -86,21 +89,25 @@ export const TURN_STATE = {
         "0": {
             id: 0,
             ready: false,
-            display: "Waiting"
+            display: "Waiting",
+            short: EMOJI[":clock3:"]
         },
         "1": {
             id: 1,
             ready: false,
-            display: "Partial"
+            display: "Partial",
+            short: EMOJI[":turtle:"]
         },
         "2": {
             id: 2,
             ready: true,
-            display: "Done"
+            display: "Done",
+            short: EMOJI[":checkBox:"]
         },
         "9": { //lobby?
             id: 9,
             ready: false,
-            display: "-"
+            display: "-",
+            short: ""
         }
     };
