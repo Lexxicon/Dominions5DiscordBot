@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         log.debug(`forcing turn with arg ${arg? arg : 'default'}`)
         let time = Util.getSeconds(arg || '15s');
         game.state.nextTurnStartTime = new Date().addSeconds(time);

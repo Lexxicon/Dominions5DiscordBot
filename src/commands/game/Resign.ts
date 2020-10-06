@@ -19,7 +19,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let roleID = game.discord.playerRoleId;
         if(roleID){
             let role = await msg.guild.roles.fetch(roleID)

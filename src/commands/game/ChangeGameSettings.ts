@@ -18,7 +18,7 @@ new class extends GameCommand{
         return __filename;
     }
 
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let args = arg ? arg.split(' ') : [];
         if(args.length > 0){
             switch(args[0]) {

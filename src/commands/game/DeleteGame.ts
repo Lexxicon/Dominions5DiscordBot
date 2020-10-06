@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         await deleteGame(game);
         return 0;
     }

@@ -18,7 +18,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let seconds = Util.getSeconds(arg);
         game.state.nextTurnStartTime = new Date(game.state.nextTurnStartTime.getTime() + (seconds * 1000));
         await Util.domcmd.startGame(game, game.state.nextTurnStartTime.getSecondsFromNow());

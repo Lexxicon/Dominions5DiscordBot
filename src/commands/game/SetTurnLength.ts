@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let seconds = Util.getSeconds(arg);
         game.settings.turns.maxTurnTimeMinutes = Math.floor(seconds/60);
         await saveGame(game);

@@ -3,8 +3,10 @@ import Discord, { Message, Snowflake } from 'discord.js';
 import { Game, getChannel, getPlayerDisplayName, getPlayerForNation, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
 import fs from 'fs';
 import _ from 'lodash';
+import dateFormat from 'dateformat';
 import log4js from 'log4js';
 import Util from './Util';
+import AsciiTable from 'ascii-table';
 
 const log = log4js.getLogger();
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
@@ -186,6 +188,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
     }
     game.playerCount = activePlayerCount;
 
+
     fields.push({
         name: 'Empire',
         value: _.join(activeNames, "\n"),
@@ -225,10 +228,17 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         if(game.state.paused){
             desc.push(`Paused`);
         }else if(game.state.nextTurnStartTime){
-            desc.push(`Auto Host at: ${game.state.nextTurnStartTime}`);
+            desc.push(`Auto Host at: ${dateFormat(game.state.nextTurnStartTime, 'yyyy-mm-dd HH:MM')}`);
             
             desc.push(`Next turn starts in ${Util.getDisplayTime(secondsTillHost)}!`);
         }
+    }
+
+    let table = new AsciiTable(game.name);
+    table.removeBorder();
+    table.setHeading('Empire', 'Player', 'Turn');
+    for(let i = 0; i < activeNames.length; i++){
+        table.addRow(activeNames[i], activePlayers[i], activeState[i]);
     }
 
     const embeddedMessage = new Discord.MessageEmbed()
@@ -237,7 +247,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         .setDescription(_.join(desc, '\n'))
         .addFields( fields );
 
-    return embeddedMessage;
+    return '```'+(desc.join('\n'))+'\n'+table.toString()+'```' as string;
 }
 
 async function read(path: string){
@@ -298,14 +308,14 @@ async function updateGameStatus(game: Game){
                 msg = await channel.messages.fetch(msgID);
                 msg?.edit(embed);
             }
-            if(msg == null){
-                log.debug(`sending new message`);
-                msg = await channel.send(embed);
-                msg.pin();
-                game.discord.turnStateMessageId = msg.id;
-            }
         }catch(err){
             log.error(`Error fetching message for ${game.name}, ${err}`);
+        }
+        if(msg == null || msg.deleted){
+            log.debug(`sending new message`);
+            msg = await channel.send(embed);
+            msg.pin();
+            game.discord.turnStateMessageId = msg.id;
         }
     }
     game.playerStatus = currentTurnState.playerStatus;

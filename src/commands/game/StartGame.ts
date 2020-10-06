@@ -18,7 +18,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let VP = game.settings.setup.victoryPoints;
         if(VP < 0){
             let playerCount = game.playerCount;

@@ -16,7 +16,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, mod: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, mod: string): Promise<number> {
         msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
         game.settings.setup.mods.forEach(element => {
             log.info(element);

@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         game.settings.turns.paused = false;
         await Util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
         await saveGame(game);

@@ -16,7 +16,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, nationID: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, nationID: string): Promise<number> {
         if(!game.discord.players[msg.member.id]){
             await msg.channel.send(`You haven't joined yet!`);
             return -1;

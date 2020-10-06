@@ -15,6 +15,7 @@
     "ascii-table": "0.0.9",
     "asciichart": "^1.5.25",
     "awesome-typescript-loader": "^5.2.1",
+    "dateformat": "^3.0.3",
     "discord.js": "^12.3.1",
     "dotenv": "^8.2.0",
     "lodash": "^4.17.20",

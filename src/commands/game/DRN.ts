@@ -29,7 +29,7 @@ new class extends GameCommand{
         return roll;
     }
 
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let match = VAL_REGEX.exec(arg);
         if(match && match?.groups){
             let atk = Number(match.groups['ATK']);

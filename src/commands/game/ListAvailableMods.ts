@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, arg: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         Util.getAvailableMods(f => msg.channel.send(`Available Mods\n${f.join('\n')}`));
         return 0;
     }

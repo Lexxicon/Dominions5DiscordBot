@@ -2,7 +2,7 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import * as constants from './Constants';
-import { Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
+import { Channel, Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
 import { PlayerStatus, updateGameStatus } from './DominionsStatus';
 import EventEmitter from 'events';
 import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
@@ -16,6 +16,7 @@ import { adaptGame, GAME_BINARY_VERSION } from './LegacyGameConverter';
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
 const games: Dictionary<Game> = {};
+const gamesByChannel: Dictionary<Game> = {};
 
 
 export class Game {
@@ -104,6 +105,10 @@ function create(channel: GuildChannel, name: string) {
 
 function getGames() {
     return games;
+}
+
+function getGameByChannel(channel: Channel){
+    return gamesByChannel[channel.id];
 }
 
 async function pingPlayers(game: Game, msg: string) {
@@ -281,6 +286,7 @@ function unloadGame(game: Game) {
     stopGame(game);
     if (games[game.name] === game) {
         delete games[game.name];
+        delete gamesByChannel[game.discord.channelId];
     }
 }
 
@@ -304,7 +310,10 @@ async function deleteGame(game: Game) {
 
         if (game.discord.channelId) {
             await guild.client.channels.fetch(game.discord.channelId)
-                .then(c => c.delete())
+                .then(c => {
+                    c.delete()
+                    delete gamesByChannel[game.discord.channelId];
+                })
                 .catch(log.error);
         }
     }
@@ -387,6 +396,7 @@ function wrapGame(game: Game) {
     }
 
     games[game.name] = game;
+    gamesByChannel[game.discord.channelId] = game;
 
     return game;
 }
@@ -473,6 +483,7 @@ export {
     pingBlockingPlayers,
     getBlockingNations,
     deleteGame,
-    getGames
+    getGames,
+    getGameByChannel
 };
 

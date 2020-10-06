@@ -17,7 +17,7 @@ new class extends GameCommand{
     getPath(): string {
         return __filename;
     }
-    async execute(msg: GuildMessage, game: Game, mod: string): Promise<number> {
+    async executeGameCommand(msg: GuildMessage, game: Game, mod: string): Promise<number> {
         if(game.state.turn != -1){
             return -1;
         }
