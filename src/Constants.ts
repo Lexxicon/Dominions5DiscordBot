@@ -20,6 +20,9 @@ export const EMOJI = {
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
         ":thinking:":   "🤔",
+        ":spy:":        "🕵️",
+        ":save:":       "💾",
+        ":sleeping:":   "😴",
     };
 export const ERA = {
         "EARLY": ["--era","1"],
@@ -77,13 +80,13 @@ export const PLAYER_STATUS = {
         }
     };
 export const AI_DIFFICULTY = {
-        "0" : "Human",
-        "1" : "[bot] Easy",
-        "2" : "[bot] Normal",
-        "3" : "[bot] Difficult",
-        "4" : "[bot] Mighty",
-        "5" : "[bot] Master",
-        "6" : "[bot] Impossible"
+        "0" : `Human`,
+        "1" : `${EMOJI[":robot:"]} Easy`,
+        "2" : `${EMOJI[":robot:"]} Normal`,
+        "3" : `${EMOJI[":robot:"]} Difficult`,
+        "4" : `${EMOJI[":robot:"]} Mighty`,
+        "5" : `${EMOJI[":robot:"]} Master`,
+        "6" : `${EMOJI[":robot:"]} Impossible`
     };
 export const TURN_STATE = {
         "0": {

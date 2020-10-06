@@ -1,5 +1,5 @@
 import * as constants from './Constants';
-import Discord, { Message, Snowflake } from 'discord.js';
+import Discord, { Constants, Message, Snowflake } from 'discord.js';
 import { Game, getChannel, getPlayerDisplayName, getPlayerForNation, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
 import fs from 'fs';
 import _ from 'lodash';
@@ -107,7 +107,6 @@ function parseLines(lines: string[]) : GameState{
 }
 
 async function createEmbeddedGameState(game: Game, gameState: GameState, staleNations: Snowflake[]){
-    const fields: {name: string, value: string, inline: boolean}[] = [];
     let activeNames: string[] = [];
     let activePlayers: string[] = [];
     let activeState: string[] = [];
@@ -137,7 +136,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
                 playerName = s.playerStatus.display;
             }
         }
-        if(s.playerStatus.id < 0){
+        if(s.playerStatus.id < 0){ //AI
             playerName = `[${s.playerStatus.display}] ${playerName}`;
         }
         if(playerName != '-' && playerName != ''){
@@ -152,16 +151,16 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             if(uploaded && claimed){
                 state = constants.EMOJI[":checkBox:"];
             }else if(claimed && !uploaded) {
-                state = 'Upload';
+                state = constants.EMOJI[":save:"];
             }else if(!claimed && uploaded) {
-                state = 'Claim';
+                state = constants.EMOJI[":spy:"];
             }else{
                 state = '';
             }
         }else {
             if(s.playerStatus.id == 1){
                 if(game.state.turn > 2 && s.stringId && staleMap[s.stringId] && s.turnState.id == 0){
-                    state = "Stale";
+                    state = constants.EMOJI[":sleeping:"];
                 }else{
                     state = s.turnState.short;
                 }
@@ -188,28 +187,8 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             await addRecord(status);
         }
     }
+    
     game.playerCount = activePlayerCount;
-
-
-    fields.push({
-        name: 'Empire',
-        value: _.join(activeNames, "\n"),
-        inline: true
-    });
-    fields.push({
-        name: 'Player',
-        value: _.join(activePlayers, "\n"),
-        inline: true
-    });
-    fields.push({
-        name: 'Turn State',
-        value: _.join(activeState, '\n'),
-        inline: true
-    });
-
-    fields.forEach(v => {
-        if(v.value.length == 0) v.value = '-';
-    });
 
     let desc: string[] = [];
 
@@ -243,13 +222,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         table.addRow(activeNames[i], activePlayers[i], activeState[i]);
     }
 
-    const embeddedMessage = new Discord.MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle(`Game State for: ${gameState.name}`)
-        .setDescription(_.join(desc, '\n'))
-        .addFields( fields );
-
-    return '```'+(desc.join('\n'))+'\n'+table.toString()+'```' as string;
+    return '```'+(desc.join('\n'))+'\n\n'+table.toString()+'```' as string;
 }
 
 async function read(path: string){

@@ -27,6 +27,7 @@ new class extends GameCommand{
                     return -1;
                 }
             }
+            let currentNation = game.discord.players[msg.member.id];
             game.discord.players[msg.member.id] = nationID;
             await saveGame(game);
             let displayName = await getPlayerDisplayName(game, nationID);

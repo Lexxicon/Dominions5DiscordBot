@@ -58,9 +58,11 @@ export async function processGameCommand(msg: GuildMessage){
     const commandKey = input.substring(0, split);
     const command = registry[commandKey];
     if(!command){
-        if(commandKey == 'help')
-        await msg.channel.send(`Available Commands:\n${_.keys(registry).join('\n')}`);
-        return 0;
+        if(commandKey == 'help'){
+            await msg.channel.send(`Available Commands:\n${_.keys(registry).join('\n')}`);
+            return 0;
+        }
+        return -1;
     } 
 
     const arg = split >= input.length ? '' : input.substring(split + 1);
