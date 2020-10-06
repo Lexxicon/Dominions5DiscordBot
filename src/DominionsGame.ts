@@ -29,7 +29,7 @@ export class Game {
         notifiedBlockers: false,
         paused: false
     };
-    playerStatus: PlayerStatus[] = [];
+    playerStatus: NumericDictionary<PlayerStatus> = [];
     settings = {
         server: {
             port: null as number | null,
@@ -125,7 +125,8 @@ function getBlockingNations(game: Game, staleNations: Snowflake[]) {
     if (!staleNations) staleNations = [];
 
     let blockingNations: string[] = [];
-    for (let player of game.playerStatus) {
+    for (let nationID in game.playerStatus) {
+        let player = game.playerStatus[nationID];
         if (player.playerStatus.canBlock && !player.turnState.ready && !staleNations.includes(player.stringId)) {
             blockingNations.push(`${player.nationId}`);
         }

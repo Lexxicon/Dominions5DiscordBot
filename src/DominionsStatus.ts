@@ -7,6 +7,7 @@ import dateFormat from 'dateformat';
 import log4js from 'log4js';
 import Util from './Util';
 import AsciiTable from 'ascii-table';
+import { groupCollapsed } from 'console';
 
 const log = log4js.getLogger();
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
@@ -78,7 +79,7 @@ function parseLines(lines: string[]) : GameState{
         let res: RegExpMatchArray | null = null;
         if((res = line.match(NATION_REGEX)) && res.groups){
             const groups = res.groups;
-            gameState.playerStatus.push({
+            gameState.playerStatus[Number(groups.NATION_ID)]={
                 nationId: Number(groups.NATION_ID),
                 pretenderId: Number(groups.PRETENDER_ID),
                 stringId: groups.STRING_ID,
@@ -87,7 +88,7 @@ function parseLines(lines: string[]) : GameState{
                 name: groups.NAME,
                 title: groups.TITLE,
                 turnState: constants.TURN_STATE[groups.TURN_STATE],
-            });
+            };
         }else if((res = line.match(STATUS_REGEX)) && res.groups){
             gameState.name = res.groups.GAME_NAME;
         }else if((res = line.match(TURN_REGEX)) && res.groups){
@@ -100,8 +101,6 @@ function parseLines(lines: string[]) : GameState{
             };
         }
     }
-
-    gameState.playerStatus = _.sortBy(gameState.playerStatus, o => o.nationId);
 
     return gameState;
 }
@@ -173,18 +172,20 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
 
     if(gameState.turnState.turn >= 0){
         for(let status of gameState.playerStatus){
-            if(status.playerStatus.canBlock){
+            if(status && status.playerStatus.canBlock){
                 await addRecord(status);
             }
         }
         for(let status of gameState.playerStatus){
-            if(!status.playerStatus.canBlock){
+            if(status && !status.playerStatus.canBlock){
                 await addRecord(status);
             }
         }
     }else{
         for(let status of gameState.playerStatus){
-            await addRecord(status);
+            if(status){
+                await addRecord(status);
+            }
         }
     }
     
@@ -241,7 +242,7 @@ function getStatusFilePath(game:Game){
 }
 
 async function updateGameStatus(game: Game){    
-    let updateTime = new Date().addSeconds(15);
+    let updateTime = new Date().addSeconds(5);
     if(nextAllowedUpdate[game.name] && nextAllowedUpdate[game.name] > new Date().getTime()){
         log.debug(`Reducing spam for ${game.name}`);
         if(!queuedUpdate[game.name]){

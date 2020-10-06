@@ -136,6 +136,15 @@ async function deleteGameSave(game) {
     }
 }
 
+async function deletePretender(game:Game, nation:string) {
+    try{
+        if(game.state.turn > 0) throw `Can't delete pretenders after a game has started!`
+        await fs.promises.unlink(`${process.env.DOM5_CONF}/savedgames/${game.name}/${nation}.2h`);
+    }catch(err){
+        log.error(err);
+    }
+}
+
 function loadAllGames(cb: (gameFile: string)=>void){
     fs.readdir(`${process.env.BOT_SAVE_PATH}`, (e, items)=>{
         if(e) {
@@ -282,4 +291,5 @@ export = {
     backupGame,
     isGuildMessage,
     getDisplayTime,
+    deletePretender
 };

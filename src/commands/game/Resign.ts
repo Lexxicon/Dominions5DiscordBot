@@ -1,8 +1,9 @@
 import { getLogger } from "log4js";
 import { Game, getPlayerDisplayName, saveGame } from "../../DominionsGame";
-import { updateGameStatus } from "../../DominionsStatus";
+import { PlayerStatus, updateGameStatus } from "../../DominionsStatus";
 import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
+import Util from "../../Util";
 import { GameCommand } from "../GameCommandHandler";
 
 const races = require("../../../res/races.json");
@@ -30,6 +31,13 @@ new class extends GameCommand{
         if(game.discord.players[msg.member.id]){
             let nationID = game.discord.players[msg.member.id];
             let displayName = await getPlayerDisplayName(game, nationID);
+            
+            if(game.state.turn < 0){
+                let currentNation = game.discord.players[msg.member.id];
+                let status:PlayerStatus = game.playerStatus[currentNation];
+                Util.deletePretender(game, status.stringId);
+            }
+
             delete game.discord.players[msg.member.id];
             await saveGame(game);
             await updateGameStatus(game);

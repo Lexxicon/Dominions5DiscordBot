@@ -15,11 +15,24 @@ export function adaptGame(rawGame: any){
     return rawGame;
 }
 
-export const GAME_BINARY_VERSION = 1;
+export const GAME_BINARY_VERSION = 2;
 
+const INDEXED_NATIONS = 1;
 const ORIGINAL_VERSION = 0;
 
-const BINARY_CONVERTERS: Array<(raw: any) => any> = [];
+const BINARY_CONVERTERS: Array<(raw: any) => object> = [];
+
+BINARY_CONVERTERS[INDEXED_NATIONS] = (raw) => {
+    if(raw.playerStatus && raw.playerStatus.length){
+        let index: any[] = [];
+        for(let nation of raw.playerStatus){
+            index[Number(nation.nationID)] = nation;
+        }
+        raw.playerStatus = index;
+    }
+    return raw;
+}
+
 BINARY_CONVERTERS[ORIGINAL_VERSION] = (raw) =>{
 
     raw.settings.server.masterPass = raw.settings.setup.masterPass;
