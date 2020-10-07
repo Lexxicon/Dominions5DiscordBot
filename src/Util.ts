@@ -124,7 +124,7 @@ function printError (error: Error, explicit: boolean) {
 function guessStatus(input: any, nations: PlayerStatus[]){
     if(isNaN(input)){
         let bestGuess: PlayerStatus | null = null;
-        let reg = /[.,\/#!$%\^&\*;:{}=\-_'`~()]/g
+        let reg = /[.,\/#!$%\^&\*;:{}=\-_'`~() ]/g
         input = (input as string).normalize('NFD').toLocaleLowerCase().replace(reg,"").trim();
         for(let i = 0; i < nations.length; i++){
             let status = nations[i];
