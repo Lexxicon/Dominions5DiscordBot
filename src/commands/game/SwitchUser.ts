@@ -5,8 +5,6 @@ import { Permission } from "../../Permissions";
 import Util from "../../Util";
 import { GameCommand } from "../GameCommandHandler";
 
-const races = require("../../../res/races.json");
-
 new class extends GameCommand{
     getNeededPermission(): Permission {
         return Permission.PLAYER;
@@ -21,10 +19,14 @@ new class extends GameCommand{
         if(!game.discord.players[msg.member.id]){
             await msg.channel.send(`You haven't joined yet!`);
             return -1;
-        }else if(races[game.settings.setup.era][nationID]) {
+        }
+        
+        let nation = Util.guessStatus(nationID, game.playerStatus);
+        
+        if(nation) {
             for(let otherPlayer in game.discord.players){
-                if(msg.member.id !== otherPlayer && game.discord.players[otherPlayer] == nationID){
-                    await msg.channel.send(`Race is already claimed! race: ${races[game.settings.setup.era][nationID]}`)
+                if(msg.member.id !== otherPlayer && game.discord.players[otherPlayer] == `${nation.nationId}`){
+                    await msg.channel.send(`Race is already claimed! race: ${nation.name}`)
                     return -1;
                 }
             }
@@ -35,11 +37,11 @@ new class extends GameCommand{
                 Util.deletePretender(game, status.stringId);
             }
             
-            game.discord.players[msg.member.id] = nationID;
+            game.discord.players[msg.member.id] = `${nation.nationId}`;
             await saveGame(game);
-            let displayName = await getPlayerDisplayName(game, nationID);
+            let displayName = await getPlayerDisplayName(game, `${nation.nationId}`);
             await updateGameStatus(game);
-            await msg.channel.send(`Joined ${displayName} as ${races[game.settings.setup.era][nationID]}`);
+            await msg.channel.send(`Joined ${displayName} as ${nation.name}`);
         }
         return 0;
     }

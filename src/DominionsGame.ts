@@ -1,17 +1,17 @@
 
 
 import { ChildProcess, spawn } from 'child_process';
-import * as constants from './Constants';
-import { Channel, Client, Guild, GuildChannel, Snowflake, TextChannel } from "discord.js";
-import { PlayerStatus, updateGameStatus } from './DominionsStatus';
+import { Channel, GuildChannel, Snowflake, TextChannel } from "discord.js";
 import EventEmitter from 'events';
-import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
 import _, { Dictionary, NumericDictionary } from "lodash";
 import { getLogger } from 'log4js';
 import { Readable } from "stream";
-import util from './Util';
 import { getDiscordBot } from '.';
+import * as constants from './Constants';
+import { PlayerStatus, updateGameStatus } from './DominionsStatus';
+import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
 import { adaptGame, GAME_BINARY_VERSION } from './LegacyGameConverter';
+import util from './Util';
 
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
@@ -29,7 +29,7 @@ export class Game {
         notifiedBlockers: false,
         paused: false
     };
-    playerStatus: NumericDictionary<PlayerStatus> = [];
+    playerStatus: PlayerStatus[] = [];
     settings = {
         server: {
             port: null as number | null,

@@ -24,7 +24,6 @@ export abstract class GameCommand implements GeneralCommand {
             if(registry[name]){
                 loadingErrors.push(`Duplicate command! ${this.getName()} ${this.getPath()}`);
             }else{
-                log.debug(`Registered ${name}`);
                 this.value[name] = this;
             }
         }

@@ -1,16 +1,18 @@
 
-import * as constants from './Constants';
-import { Guild, Message, NewsChannel, TextChannel } from "discord.js";
+import { Message, NewsChannel, TextChannel } from "discord.js";
 import fs from "fs";
-import { GuildMessage } from "./global";
+import { STATUS_CODES } from "http";
 import _ from "lodash";
-import { Game } from './DominionsGame';
 import { getLogger } from 'log4js';
+import { ncp } from 'ncp';
+import * as constants from './Constants';
+import { Game } from './DominionsGame';
+import { PlayerStatus } from "./DominionsStatus";
+import { GuildMessage } from "./global";
+
 const log = getLogger();
 
 const config = require('../res/config.json');
-
-const ncp = require('ncp').ncp;
 
 const EMOJI_REGEX = {};
 
@@ -117,6 +119,42 @@ async function backupGame(name: string){
 
 function printError (error: Error, explicit: boolean) {
     log.info(`[${explicit ? 'EXPLICIT' : 'INEXPLICIT'}] ${error.name}: ${error.message}, ${error.stack}`);
+}
+
+function guessStatus(input: any, nations: PlayerStatus[]){
+    if(isNaN(input)){
+        let bestGuess: PlayerStatus | null = null;
+        let reg = /[.,\/#!$%\^&\*;:{}=\-_'`~()]/g
+        input = (input as string).normalize('NFD').toLocaleLowerCase().replace(reg,"").trim();
+        for(let i = 0; i < nations.length; i++){
+            let status = nations[i];
+            if(status == null) continue;
+            let nationName = status.name.normalize('NFD').toLocaleLowerCase().replace(reg,"");
+            log.debug(`${input} vs ${nationName}`);
+            if(nationName == input){
+                return status;
+            }
+            if(nationName.startsWith(input)){
+                bestGuess = status;
+            }
+
+            if(bestGuess == null && nationName.includes(input)){
+                bestGuess = status;
+            }
+        }
+        return bestGuess;
+    }else{
+        let i = Number(input);
+        if(nations[i].nationId == i){
+            return nations[i];
+        }
+        for(let status of nations){
+            if(status.nationId == i){
+                return status;
+            }
+        }
+    }
+    return null;
 }
 
 async function deleteJSON(name: string) {
@@ -291,5 +329,6 @@ export = {
     backupGame,
     isGuildMessage,
     getDisplayTime,
-    deletePretender
+    deletePretender,
+    guessStatus
 };

@@ -6,8 +6,6 @@ import { Permission } from "../../Permissions";
 import Util from "../../Util";
 import { GameCommand } from "../GameCommandHandler";
 
-const races = require("../../../res/races.json");
-
 const log = getLogger();
 
 new class extends GameCommand{
@@ -41,7 +39,7 @@ new class extends GameCommand{
             delete game.discord.players[msg.member.id];
             await saveGame(game);
             await updateGameStatus(game);
-            await msg.channel.send(`Resigned ${displayName} from ${races[game.settings.setup.era][nationID]}`);
+            await msg.channel.send(`Resigned ${displayName} from ${game.playerStatus[nationID]?.name}`);
         }
         return 0;
     }

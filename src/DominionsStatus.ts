@@ -1,13 +1,11 @@
-import * as constants from './Constants';
-import Discord, { Constants, Message, Snowflake } from 'discord.js';
-import { Game, getChannel, getPlayerDisplayName, getPlayerForNation, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
-import fs from 'fs';
-import _ from 'lodash';
-import dateFormat from 'dateformat';
-import log4js from 'log4js';
-import Util from './Util';
 import AsciiTable from 'ascii-table';
-import { groupCollapsed } from 'console';
+import dateFormat from 'dateformat';
+import { Message, Snowflake } from 'discord.js';
+import fs from 'fs';
+import log4js from 'log4js';
+import * as constants from './Constants';
+import { Game, getChannel, getPlayerDisplayName, getPlayerForNation, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
+import Util from './Util';
 
 const log = log4js.getLogger();
 const STATUS_REGEX = /^Status for '(?<GAME_NAME>.*)'$/;
@@ -121,7 +119,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         if(gameState.turnState.turn >= 0 && s.playerStatus.id == 0){
             return;
         }
-        activeNames.push(`${s.nationId} ${s.name}`);
+        activeNames.push(`${s.name}`);
 
         let playerName = "";
 
