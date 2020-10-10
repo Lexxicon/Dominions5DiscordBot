@@ -20,18 +20,18 @@ export const GAME_BINARY_VERSION = 2;
 const INDEXED_NATIONS = 1;
 const ORIGINAL_VERSION = 0;
 
-const BINARY_CONVERTERS: Array<(raw: any) => object> = [];
+const BINARY_CONVERTERS: Array<(raw: any) => Record<string, undefined>> = [];
 
 BINARY_CONVERTERS[INDEXED_NATIONS] = (raw) => {
     if(raw.playerStatus && raw.playerStatus.length){
-        let index: any[] = [];
-        for(let nation of raw.playerStatus){
+        const index: any[] = [];
+        for(const nation of raw.playerStatus){
             index[Number(nation.nationID)] = nation;
         }
         raw.playerStatus = index;
     }
     return raw;
-}
+};
 
 BINARY_CONVERTERS[ORIGINAL_VERSION] = (raw) =>{
 
@@ -39,14 +39,14 @@ BINARY_CONVERTERS[ORIGINAL_VERSION] = (raw) =>{
     delete raw.settings.setup.masterPass;
 
     raw.settings.turns.maxHoldUps = 2;
-    let thrones = {
+    const thrones = {
         level1: raw.settings.setup.thrones[0],
         level2: raw.settings.setup.thrones[1],
         level3: raw.settings.setup.thrones[2]
-    }
+    };
     raw.settings.setup.thrones = thrones;
 
     delete raw.discord.gameLobbyChannelId;
     
     return raw;
-}
+};

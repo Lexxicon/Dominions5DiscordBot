@@ -1,11 +1,11 @@
-const log = require("log4js").getLogger();
-
 import { Guild } from 'discord.js';
+import { getLogger } from 'log4js';
 import { create, hostGame } from './DominionsGame';
 import * as status from './DominionsStatus';
 import { GuildMessage } from './global';
 import util from './Util';
 
+const log =getLogger();
 const GAMES_CATEGORY_NAME = process.env.DEFAULT_GAMES_CATEGORY_NAME!;
 const LOBBY_NAME = `${process.env.DEFAULT_LOBBY_NAME}`.toLowerCase();
 
@@ -23,7 +23,7 @@ async function createChannel(guild: Guild, name: string, reason: string){
     }
 
     const category = guild.channels.cache.find(channel => channel.name == GAMES_CATEGORY_NAME);
-    return guild.channels.create(name, {
+    return await guild.channels.create(name, {
         type: 'text',
         parent: category?.id,
         reason: reason
@@ -39,66 +39,64 @@ async function deleteChannel(guild: Guild, name: string, reason: string){
         return;
     }
 
-    let channel = guild.channels.cache.find(channel => channel.name == name);
+    const channel = guild.channels.cache.find(channel => channel.name == name);
     if (!channel) {
-        log.warn(`Failed to find channel: ${name}`)
+        log.warn(`Failed to find channel: ${name}`);
         return;
     }
 
     const category = guild.channels.cache.find(channel => channel.name == GAMES_CATEGORY_NAME);
     if (channel.parent !== category) {
-        log.warn(`Can\'t delete channels not in the game category! ${channel.name}`);
+        log.warn(`Can't delete channels not in the game category! ${channel.name}`);
         return;
     } 
     
     log.info(`About to delete ${channel}`);
-    return channel.delete(reason);
+    return await channel.delete(reason);
 }
 
 async function createNewGame(msg: GuildMessage, era: any){
-    let gameName = util.generateName();
+    const gameName = util.generateName();
     log.info(`Creating ${gameName}`);
 
     log.info(`Creating channel`);
-    let channel = await createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`);
+    const channel = await createChannel(msg.channel.guild, `${gameName}`, `Created by request of ${msg.author.username}`);
     if(!channel) throw `Failed to create game ${gameName}`;
 
     log.info(`Creating game`);
-    let game = create(channel, gameName);
+    const game = create(channel, gameName);
 
     if(era) game.settings.setup.era = era;
     const guild: Guild = msg.guild;
 
-    let playerRole = await guild.roles.create({
+    const playerRole = await guild.roles.create({
         data: {
             name:`${gameName}-player`,
             mentionable: true
         }
-    })
+    });
     
     game.discord.playerRoleId = playerRole.id;
-    let adminRole = await msg.guild.roles.create({
+    const adminRole = await msg.guild.roles.create({
         data: {
             name: `${gameName}-admin`,
             mentionable: true
         }
     });
 
-    msg.member.roles.add(adminRole);
+    await msg.member.roles.add(adminRole);
 
     game.discord.adminRoleId = adminRole.id;
     log.info(`Saving game`);
-    util.saveJSON(game.name, game);
+    await util.saveJSON(game.name, game);
     log.info(`Hosting game`);
     await hostGame(game);
-    setTimeout(() => {
+    setTimeout(async () => {
         log.info(`Watching game`);
-        status.startWatches(game);
-        util.saveJSON(game.name, game);
+        await status.startWatches(game);
+        await util.saveJSON(game.name, game);
     }, 3000);
 }
-
-let pingMsgs = {};
 
 async function handleCommand(msg: GuildMessage): Promise<number>{
     if(!msg.member.roles.cache.find(r => r.name === "Dominions Master")){
@@ -126,7 +124,8 @@ async function handleCommand(msg: GuildMessage): Promise<number>{
                 });
             break;
         case 'ping':
-            msg.channel.send(`<@${msg.author.id}>`);
+            await msg.channel.send(`<@${msg.author.id}>`);
+            break;
         default:
             log.warn(`unsupported command! ${command}`);
             return -1;

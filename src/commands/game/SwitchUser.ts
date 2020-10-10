@@ -21,28 +21,28 @@ new class extends GameCommand{
             return -1;
         }
         
-        let nation = Util.guessStatus(nationID, game.playerStatus);
+        const nation = Util.guessStatus(nationID, game.playerStatus);
         
         if(nation) {
-            for(let otherPlayer in game.discord.players){
+            for(const otherPlayer in game.discord.players){
                 if(msg.member.id !== otherPlayer && game.discord.players[otherPlayer] == `${nation.nationId}`){
-                    await msg.channel.send(`Race is already claimed! race: ${nation.name}`)
+                    await msg.channel.send(`Race is already claimed! race: ${nation.name}`);
                     return -1;
                 }
             }
 
             if(game.state.turn < 0){
-                let currentNation = game.discord.players[msg.member.id];
-                let status:PlayerStatus = game.playerStatus[currentNation];
-                Util.deletePretender(game, status.stringId);
+                const currentNation = game.discord.players[msg.member.id];
+                const status:PlayerStatus = game.playerStatus[currentNation];
+                await Util.deletePretender(game, status.stringId);
             }
             
             game.discord.players[msg.member.id] = `${nation.nationId}`;
             await saveGame(game);
-            let displayName = await getPlayerDisplayName(game, `${nation.nationId}`);
+            const displayName = await getPlayerDisplayName(game, `${nation.nationId}`);
             await updateGameStatus(game);
             await msg.channel.send(`Joined ${displayName} as ${nation.name}`);
         }
         return 0;
     }
-}
+};

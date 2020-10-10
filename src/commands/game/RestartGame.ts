@@ -19,8 +19,8 @@ new class extends GameCommand{
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         log.info(`Killing ${game.name} ${game.pid}`);
         await stopGame(game);
-        log.info("Spawning")
+        log.info("Spawning");
         await hostGame(game);
         return 0;
     }
-}
+};

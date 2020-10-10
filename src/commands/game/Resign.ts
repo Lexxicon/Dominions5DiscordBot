@@ -19,21 +19,21 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let roleID = game.discord.playerRoleId;
+        const roleID = game.discord.playerRoleId;
         if(roleID){
-            let role = await msg.guild.roles.fetch(roleID)
+            const role = await msg.guild.roles.fetch(roleID);
             if(role){
                 await msg.member.roles.remove(role);
             }
         }
         if(game.discord.players[msg.member.id]){
-            let nationID = game.discord.players[msg.member.id];
-            let displayName = await getPlayerDisplayName(game, nationID);
+            const nationID = game.discord.players[msg.member.id];
+            const displayName = await getPlayerDisplayName(game, nationID);
             
             if(game.state.turn < 0){
-                let currentNation = game.discord.players[msg.member.id];
-                let status:PlayerStatus = game.playerStatus[currentNation];
-                Util.deletePretender(game, status.stringId);
+                const currentNation = game.discord.players[msg.member.id];
+                const status:PlayerStatus = game.playerStatus[currentNation];
+                await Util.deletePretender(game, status.stringId);
             }
 
             delete game.discord.players[msg.member.id];
@@ -43,4 +43,4 @@ new class extends GameCommand{
         }
         return 0;
     }
-}
+};

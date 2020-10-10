@@ -1,6 +1,3 @@
-import { getLogger } from "log4js";
-
-const log = getLogger();
 
 export enum CommandType {
     ANYWHERE,

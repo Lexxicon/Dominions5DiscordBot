@@ -22,4 +22,4 @@ new class extends GameCommand{
     
         return 0;
     }
-}
+};

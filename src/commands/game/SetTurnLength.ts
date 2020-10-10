@@ -18,7 +18,7 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let seconds = Util.getSeconds(arg);
+        const seconds = Util.getSeconds(arg);
         game.settings.turns.maxTurnTimeMinutes = Math.floor(seconds/60);
         await saveGame(game);
         await Util.domcmd.setInterval(game, game.settings.turns.maxTurnTimeMinutes);
@@ -27,4 +27,4 @@ new class extends GameCommand{
     
         return 0;
     }
-}
+};

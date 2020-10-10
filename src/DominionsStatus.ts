@@ -16,7 +16,7 @@ const nextAllowedUpdate: { [k : string]:number } = {};
 const queuedUpdate: { [k : string]:NodeJS.Timeout} = {};
 
 class GameState {
-    name: string = "";
+    name = "";
     turnState: {
         turn: number,
         era: string,
@@ -73,7 +73,7 @@ function parseLines(lines: string[]) : GameState{
 
     const gameState = new GameState();
 
-    for(let line of lines){
+    for(const line of lines){
         let res: RegExpMatchArray | null = null;
         if((res = line.match(NATION_REGEX)) && res.groups){
             const groups = res.groups;
@@ -104,12 +104,12 @@ function parseLines(lines: string[]) : GameState{
 }
 
 async function createEmbeddedGameState(game: Game, gameState: GameState, staleNations: Snowflake[]){
-    let activeNames: string[] = [];
-    let activePlayers: string[] = [];
-    let activeState: string[] = [];
-    let staleMap = {};
+    const activeNames: string[] = [];
+    const activePlayers: string[] = [];
+    const activeState: string[] = [];
+    const staleMap = {};
 
-    for(let nation of staleNations){
+    for(const nation of staleNations){
         staleMap[nation] = nation;
     }
 
@@ -128,8 +128,6 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         }else{
             playerName = await getPlayerDisplayName(game, `${s.nationId}`);
             if(playerName == '-'){
-                if(s.playerStatus.id != 0){
-                }
                 playerName = s.playerStatus.display;
             }
         }
@@ -143,8 +141,8 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         let state = "-";
 
         if(s.turnState.id == 9){
-            let uploaded = s.playerStatus.id != 0;
-            let claimed = getPlayerForNation(game, `${s.nationId}`) != null;
+            const uploaded = s.playerStatus.id != 0;
+            const claimed = getPlayerForNation(game, `${s.nationId}`) != null;
             if(uploaded && claimed){
                 state = constants.EMOJI[":checkBox:"];
             }else if(claimed && !uploaded) {
@@ -166,21 +164,21 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             }
         }
         activeState.push(state);
-    }
+    };
 
     if(gameState.turnState.turn >= 0){
-        for(let status of gameState.playerStatus){
+        for(const status of gameState.playerStatus){
             if(status && status.playerStatus.canBlock){
                 await addRecord(status);
             }
         }
-        for(let status of gameState.playerStatus){
+        for(const status of gameState.playerStatus){
             if(status && !status.playerStatus.canBlock){
                 await addRecord(status);
             }
         }
     }else{
-        for(let status of gameState.playerStatus){
+        for(const status of gameState.playerStatus){
             if(status){
                 await addRecord(status);
             }
@@ -189,12 +187,12 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
     
     game.playerCount = activePlayerCount;
 
-    let desc: string[] = [];
+    const desc: string[] = [];
 
     desc.push(`Hosted at: ${process.env.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
 
-    let secondsTillHost = game.state.nextTurnStartTime.getSecondsFromNow();
+    const secondsTillHost = game.state.nextTurnStartTime.getSecondsFromNow();
     log.info(`Seconds till host ${secondsTillHost}`);
 
     if(gameState.turnState.turn < 0){
@@ -214,7 +212,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         }
     }
 
-    let table = new AsciiTable(game.name);
+    const table = new AsciiTable(game.name);
     table.removeBorder();
     table.setHeading('Empire', 'Player', 'Turn');
     for(let i = 0; i < activeNames.length; i++){
@@ -225,9 +223,9 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
 }
 
 async function read(path: string){
-    log.info('reading ' + path)
+    log.info('reading ' + path);
     try{
-        let data = await fs.promises.readFile(path, 'utf8');
+        const data = await fs.promises.readFile(path, 'utf8');
         return data.split('\n');
     }catch(err){
         log.error(err);
@@ -240,12 +238,12 @@ function getStatusFilePath(game:Game){
 }
 
 async function updateGameStatus(game: Game){    
-    let updateTime = new Date().addSeconds(5);
+    const updateTime = new Date().addSeconds(5);
     if(nextAllowedUpdate[game.name] && nextAllowedUpdate[game.name] > new Date().getTime()){
         log.debug(`Reducing spam for ${game.name}`);
         if(!queuedUpdate[game.name]){
             log.info(`Scheduling update for ${game.name} in ${updateTime.getSecondsFromNow()}s`);
-            let updateTask = setTimeout(()=> updateGameStatus(game), (updateTime.getSecondsFromNow()+1) * 1000);
+            const updateTask = setTimeout(()=> updateGameStatus(game).catch(er => log.error(`Update error: ${er}`)), (updateTime.getSecondsFromNow()+1) * 1000);
             nextAllowedUpdate[game.name] = updateTime.getTime();
             queuedUpdate[game.name] = updateTask;
         }
@@ -255,11 +253,11 @@ async function updateGameStatus(game: Game){
     }
     delete queuedUpdate[game.name];
     log.info(`updating ${game.name}`);
-    let lines = await read(getStatusFilePath(game));
+    const lines = await read(getStatusFilePath(game));
     log.debug(`fetching stale nations`);
-    let staleNations = await Util.getStaleNations(game);
+    const staleNations = await Util.getStaleNations(game);
     log.debug(`parsing turn state`);
-    let currentTurnState = parseLines(lines);
+    const currentTurnState = parseLines(lines);
     if(game.state.turn != currentTurnState.turnState.turn && currentTurnState.turnState.turn > 0){
         log.debug(`processing new turn`);
         game.state.turn = currentTurnState.turnState.turn;
@@ -270,31 +268,37 @@ async function updateGameStatus(game: Game){
         await Util.backupGame(game.name);
     }
     log.debug(`building embed`);
-    let embed = await createEmbeddedGameState(game, currentTurnState, staleNations);
-    let msgID = game.discord.turnStateMessageId;
+    const embed = await createEmbeddedGameState(game, currentTurnState, staleNations);
+    const msgID = game.discord.turnStateMessageId;
     let msg: undefined | Message;
-    log.debug(`fetching channel`);
-    let channel = await getChannel(game);
-    if(channel){
-        try{
-            if(msgID){
-                log.debug(`fetching message`);
-                msg = await channel.messages.fetch(msgID);
-                msg?.edit(embed);
+    try{
+        log.debug(`fetching channel`);
+        const channel = await getChannel(game);
+        if(channel){
+            try{
+                if(msgID){
+                    log.debug(`fetching message`);
+                    msg = await channel.messages.fetch(msgID);
+                    await msg?.edit(embed);
+                }
+            }catch(err){
+                log.error(`Error fetching message for ${game.name}, ${err}`);
             }
-        }catch(err){
-            log.error(`Error fetching message for ${game.name}, ${err}`);
+            if(msg == null || msg.deleted){
+                log.debug(`sending new message`);
+                msg = await channel.send(embed);
+                await msg.pin();
+                game.discord.turnStateMessageId = msg.id;
+            }
+        }else{
+            log.warn(`Failed to fetch channel for ${game.name}`);
         }
-        if(msg == null || msg.deleted){
-            log.debug(`sending new message`);
-            msg = await channel.send(embed);
-            msg.pin();
-            game.discord.turnStateMessageId = msg.id;
-        }
+    }catch(err){
+        log.error(`Error fetching channel ${err}`);
     }
     game.playerStatus = currentTurnState.playerStatus;
 
-    let blockPingTime = new Date(game.state.nextTurnStartTime).addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
+    const blockPingTime = new Date(game.state.nextTurnStartTime).addMinutes(-Math.ceil(game.settings.turns.maxTurnTimeMinutes / 4));
     log.debug(`Stale ping at ${blockPingTime}`);
     if(blockPingTime.getTime() < new Date().getTime() && game.state.turn > 0 && !game.state.paused){
         await pingBlockingPlayers(game);
@@ -303,32 +307,27 @@ async function updateGameStatus(game: Game){
     }
 
     await saveGame(game);
-
-    // if(staleNations && staleNations.length > 0 && domGame.getBlockingNations(game, staleNations).length == 0 ){
-    //     log.info(`Skipping stale players! Game: ${game.name}, Nations: ${staleNations}`);
-    //     util.domcmd.startGame(game);
-    // }
 }
 
 async function startWatches(game: Game) {
-    log.info(`Starting watches on ${game.name}`)
+    log.info(`Starting watches on ${game.name}`);
     const filePath = getStatusFilePath(game);
 
     if(!game.discord.turnStateMessageId){
         log.info(`Preping turn state message`);
-        let lines = await read(filePath);
-        let staleNations = await Util.getStaleNations(game);
+        const lines = await read(filePath);
+        const staleNations = await Util.getStaleNations(game);
         const embeddedMessage = await createEmbeddedGameState(game, parseLines(lines), staleNations);
-        let channel = await getChannel(game);
+        const channel = await getChannel(game);
         if(channel && !game.discord.turnStateMessageId){
-            let msg = await channel.send(embeddedMessage);
-            msg.pin();
+            const msg = await channel.send(embeddedMessage);
+            await msg.pin();
             game.discord.turnStateMessageId = msg.id;
-            saveGame(game);
+            await saveGame(game);
         }
     }
     log.info(`Fetching channel for ${game.name}`);
-    let channel = await getChannel(game);
+    const channel = await getChannel(game);
     if(channel != null && game.discord.turnStateMessageId){
         log.info(`Setting up watch for ${game.name}`);
         fs.watch(getStatusFilePath(game), 'utf8', () => updateGameStatus(game).catch(e => log.error(e)));

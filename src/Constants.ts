@@ -33,11 +33,11 @@ export const STORY_EVENTS = {
         "NONE": "--nostoryevents",
         "SOME": "--storyevents",
         "ALL": "--allstoryevents"
-    }
+    };
 export const EVENTS = {
         "COMMON": ["--eventrarity","1"],
         "RARE": ["--eventrarity","2"]
-    }
+    };
 export const SLOTS = {
         "BANNED": "--closed",
         "EASY": "--easyai",

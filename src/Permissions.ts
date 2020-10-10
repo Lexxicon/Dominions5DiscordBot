@@ -14,7 +14,7 @@ export enum Permission {
 export function checkPermission(member: GuildMember, neededPermission: Permission, game?: Game){
     switch(neededPermission){
         default:
-            log.warn(`Unbound permission! ${neededPermission}`)
+            log.warn(`Unbound permission! ${neededPermission}`);
             throw `Need permission ${neededPermission}`;
 
         case Permission.ANY: return true;

@@ -19,22 +19,24 @@ new class extends GameCommand{
     }
 
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let args = arg ? arg.split(' ') : [];
+        const args = arg ? arg.split(' ') : [];
         if(args.length > 0){
             switch(args[0]) {
-                case 'listMods':
-                    Util.getAvailableMods(f => msg.channel.send(`Available Mods\n${f.join('\n')}`));
-                return 0;
+                case 'listMods':{
+                    const mods = await Util.getAvailableMods();
+                    await msg.channel.send(`Available Mods\n${mods.join('\n')}`);
+                    return 0;
+                }
     
                 case 'listAddedMods':
-                    msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
+                    await msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
                     game.settings.setup.mods.forEach(element => {
                         log.info(element);
                     });
                 return 0;
     
                 case 'set':{
-                    let settingsPath = args[1].split('.');
+                    const settingsPath = args[1].split('.');
                     log.debug(`split path ${settingsPath}`);
                     let settings = game;
                     for(let i = 0; i < settingsPath.length - 1; i++){
@@ -47,11 +49,11 @@ new class extends GameCommand{
                     return 0;
                 }
                 case 'get':{
-                    let settingsPath = args[1].split('.');
+                    const settingsPath = args[1].split('.');
                     log.debug(`split path ${settingsPath}`);
                     let settings = game;
                     let lastValue = '';
-                    for(let p of settingsPath){
+                    for(const p of settingsPath){
                         lastValue = p;
                         settings = settings[p];
                     }
@@ -64,4 +66,4 @@ new class extends GameCommand{
         }
         return -1;
     }
-}
+};

@@ -21,17 +21,18 @@ new class extends GameCommand{
         if(game.state.turn != -1){
             return -1;
         }
-        Util.getAvailableMods(f => {
+        const mods = await Util.getAvailableMods();
+        for(const f of mods){
             if( f.includes(mod) && !game.settings.setup.mods.includes(mod))  {
-                log.info("added mod!")
+                log.info("added mod!");
                 game.settings.setup.mods.push(mod);
-                saveGame(game);
-                msg.channel.send(`Added Mod: ${mod}`);
+                await saveGame(game);
+                await msg.channel.send(`Added Mod: ${mod}`);
             }else {
                 log.warn(`Failed to add ${mod}`);
                 return -1;
             }
-        });
+        }
         return 0;
     }
-}
+};

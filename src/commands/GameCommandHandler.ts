@@ -1,5 +1,3 @@
-
-
 import { getLogger } from 'log4js';
 import { Game, getGameByChannel, getGames } from '../DominionsGame';
 import { GuildMessage } from '../global';
@@ -15,12 +13,12 @@ const loadingErrors:string[] = [];
 
 export abstract class GameCommand implements GeneralCommand {
     
-    public get value() : {} {
+    public get value() : Record<string, unknown> {
         return registry;
     }
 
     constructor(){
-        for(let name of this.getName()){
+        for(const name of this.getName()){
             if(registry[name]){
                 loadingErrors.push(`Duplicate command! ${this.getName()} ${this.getPath()}`);
             }else{
@@ -29,12 +27,12 @@ export abstract class GameCommand implements GeneralCommand {
         }
     }
 
-    async execute(msg: Message, args: string): Promise<Number>{
+    async execute(msg: Message, args: string): Promise<number>{
         if(!Util.isGuildMessage(msg)) return -1;
-        let game = getGameByChannel(msg.channel);
+        const game = getGameByChannel(msg.channel);
         if(!game) return -1;
 
-        return this.executeGameCommand(msg, game, args);
+        return await this.executeGameCommand(msg, game, args);
     }
 
     abstract getNeededPermission(): Permission;
@@ -44,7 +42,7 @@ export abstract class GameCommand implements GeneralCommand {
 }
 
 export interface GeneralCommand {
-    execute(msg: Message, args: string): Promise<Number>
+    execute(msg: Message, args: string): Promise<number>
 }
 
 export async function processGameCommand(msg: GuildMessage){
@@ -66,9 +64,9 @@ export async function processGameCommand(msg: GuildMessage){
 
     const arg = split >= input.length ? '' : input.substring(split + 1);
 
-    let games = getGames();
-    for(let gameKey in games){
-        let game = games[gameKey];
+    const games = getGames();
+    for(const gameKey in games){
+        const game = games[gameKey];
 
         if(msg.channel.id != game.discord.channelId){
             continue;

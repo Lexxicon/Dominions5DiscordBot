@@ -1,4 +1,7 @@
-const log = require("log4js").getLogger();
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { getLogger } from "log4js";
+
+const log = getLogger();
 
 declare global {
     interface Date {
@@ -19,18 +22,18 @@ Date.prototype.addHours = function(h) {
 
 Date.prototype.addMinutes = function(m) {
     return this.addSeconds(m * 60);
-}
+};
 
 Date.prototype.addSeconds = function(m) {
     this.setTime(this.getTime() + (m * 1000));
     return this;
-}
+};
 
 Date.prototype.getSecondsFromNow = function() {
     return Math.floor((this.getTime() - new Date().getTime()) / 1000);
 };
 
-async function withTimeout<T>(executor: (resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void, millis:number): Promise<T> {
+function withTimeout<T>(executor: (resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void, millis:number): Promise<T> {
     let timeout = null as null | NodeJS.Timeout;
     const timeoutPromise = new Promise<T>((resolve, reject) => {
         timeout = setTimeout(() => reject(`Timed out after ${millis} ms.`), millis);
@@ -41,7 +44,7 @@ async function withTimeout<T>(executor: (resolve: (value?: T | PromiseLike<T>) =
             clearTimeout(timeout);
         }
     }), timeoutPromise ]);
-};
+}
 
 Promise.withTimeout = withTimeout;
 export {};

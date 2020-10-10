@@ -21,4 +21,4 @@ new class extends GameCommand{
         await deleteGame(game);
         return 0;
     }
-}
+};

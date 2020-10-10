@@ -17,10 +17,10 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, mod: string): Promise<number> {
-        msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
+        await msg.channel.send(`Mods\n${game.settings.setup.mods.join('\n')}`);
         game.settings.setup.mods.forEach(element => {
             log.info(element);
         });
         return 0;
     }
-}
+};

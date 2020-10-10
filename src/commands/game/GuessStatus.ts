@@ -19,9 +19,9 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, nationID: string) {
-        msg.channel.send(Util.guessStatus(nationID, game.playerStatus)?.name || "miss");
+        await msg.channel.send(Util.guessStatus(nationID, game.playerStatus)?.name || "miss");
     
         return 0;
     
     }
-}
+};

@@ -19,18 +19,18 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, nationID: string) {
-        let roleID = game.discord.playerRoleId;
+        const roleID = game.discord.playerRoleId;
         if(roleID){
-            let role = await msg.guild.roles.fetch(roleID);
+            const role = await msg.guild.roles.fetch(roleID);
 
             if(role){
                 await msg.member!.roles.add(role);
             }else{
-                throw `failed to find player role! ${game.name} ${roleID}`
+                throw new Error(`failed to find player role! ${game.name} ${roleID}`);
             }
         }
 
-        let nation = Util.guessStatus(nationID, game.playerStatus);
+        const nation = Util.guessStatus(nationID, game.playerStatus);
 
         if(nation){
             if(game.discord.players[msg.member.id]){
@@ -38,25 +38,25 @@ new class extends GameCommand{
                 return 0;
             }
             
-            for(let otherPlayer in game.discord.players){
+            for(const otherPlayer in game.discord.players){
                 if(game.discord.players[otherPlayer] == nationID){
-                    await msg.channel.send(`Race is already claimed! race: ${game.playerStatus[nationID]?.name}`)
+                    await msg.channel.send(`Race is already claimed! race: ${game.playerStatus[nationID]?.name}`);
                     return -1;
                 }
             }
             game.discord.players[msg.member.id] = `${nation.nationId}`;
             await saveGame(game);
-            let name = await getPlayerDisplayName(game, `${nation.nationId}`);
+            const name = await getPlayerDisplayName(game, `${nation.nationId}`);
             log.info(`Joined ${name} as [${nation.nationId}]${nation.name} `);
             await updateGameStatus(game);
             await msg.channel.send(`Joined ${name} as ${nation.name}`);
 
         }else{
-            await msg.channel.send(`Failed to find nation! ${nationID}`)
+            await msg.channel.send(`Failed to find nation! ${nationID}`);
             return -1;
         }
     
         return 0;
     
     }
-}
+};

@@ -21,10 +21,10 @@ new class extends GameCommand{
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
         let targetVP = game.settings.setup.victoryPoints;
         if(targetVP < 0){
-            let playerCount = game.playerCount;
-            let provPerPlayer = Constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
-            log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
-            let provinces = playerCount * provPerPlayer;
+            const playerCount = game.playerCount;
+            const provPerPlayer = Constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
+            log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`);
+            const provinces = playerCount * provPerPlayer;
             log.info("provinces " + provinces);
             targetVP = Math.log(provinces) * 1.3 + (provinces / 75);
             log.info(`Target VP: ${targetVP}`);
@@ -60,4 +60,4 @@ new class extends GameCommand{
     
         return 0;
     }
-}
+};

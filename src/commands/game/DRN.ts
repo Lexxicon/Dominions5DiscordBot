@@ -22,7 +22,7 @@ new class extends GameCommand{
 
     drn(depth: number){
         if(depth > 20) return 10000;
-        let roll = Math.ceil(Math.random() * 6);
+        const roll = Math.ceil(Math.random() * 6);
         if(roll == 6){
             return 5 + this.drn(depth++);
         }
@@ -30,17 +30,17 @@ new class extends GameCommand{
     }
 
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let match = VAL_REGEX.exec(arg);
+        const match = VAL_REGEX.exec(arg);
         if(match && match?.groups){
-            let atk = Number(match.groups['ATK']);
-            let def = Number(match.groups['DEF']);
-            let result = {wins: 0, losses: 0, values: [] as number[]};
+            const atk = Number(match.groups['ATK']);
+            const def = Number(match.groups['DEF']);
+            const result = {wins: 0, losses: 0, values: [] as number[]};
             let count = 0;
             let sum = 0;
             while(count++ < 1000){
-                let atkDrn = this.drn(0) + this.drn(0) + atk;
-                let defDrn = this.drn(0) + this.drn(0) + def;
-                let roll = atkDrn - defDrn;
+                const atkDrn = this.drn(0) + this.drn(0) + atk;
+                const defDrn = this.drn(0) + this.drn(0) + def;
+                const roll = atkDrn - defDrn;
                 sum += roll;
                 result.values.push(roll);
                 if(roll > 0){
@@ -50,11 +50,11 @@ new class extends GameCommand{
                 }
             }
             result.values = result.values.sort((a, b) => a - b);
-            let rolls = result.wins + result.losses;
+            const rolls = result.wins + result.losses;
             
-            let zero: number[] = [];
-            let breakdown: number[] = [];
-            let granularity = 30;
+            const zero: number[] = [];
+            const breakdown: number[] = [];
+            const granularity = 30;
             for(let i = 0; i < granularity; i++){
                 zero[i] = 0;
                 let index = Math.floor((i/granularity) * result.values.length);
@@ -63,16 +63,16 @@ new class extends GameCommand{
                 breakdown[i] = result.values[index];
             }
             
-            let table = new AsciiTable(`${atk} vs ${def}`);
+            const table = new AsciiTable(`${atk} vs ${def}`);
             table.addRow('Rolls', rolls);
             table.addRow('Wins', result.wins);
             table.addRow('Losses', result.losses);
             table.addRow('Avg', (sum/count).toFixed(2));
             table.addRow('Win %', ((result.wins/rolls)*100).toFixed(2));
 
-            let tableStr = table.toString().split('\n') as string[];
-            let graph = AsciiChart.plot([zero, breakdown], {height: tableStr.length}).split('\n') as string[];
-            let output: string[] = [];
+            const tableStr = table.toString().split('\n') as string[];
+            const graph = AsciiChart.plot([zero, breakdown], {height: tableStr.length}).split('\n') as string[];
+            const output: string[] = [];
             output.push('```');
             for(let i = 0; i < tableStr.length; i++){
                 output.push(`${tableStr[i]} ${graph[i]}`);
@@ -82,4 +82,4 @@ new class extends GameCommand{
         }
         return 0;
     }
-}
+};
