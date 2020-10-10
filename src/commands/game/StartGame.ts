@@ -19,46 +19,44 @@ new class extends GameCommand{
         return __filename;
     }
     async executeGameCommand(msg: GuildMessage, game: Game, arg: string): Promise<number> {
-        let VP = game.settings.setup.victoryPoints;
-        if(VP < 0){
+        let targetVP = game.settings.setup.victoryPoints;
+        if(targetVP < 0){
             let playerCount = game.playerCount;
             let provPerPlayer = Constants.SIMPLE_RAND_MAP[game.settings.setup.map][1];
             log.info(`playerCount: ${playerCount}, perPlayer ${provPerPlayer}`)
             let provinces = playerCount * provPerPlayer;
             log.info("provinces " + provinces);
-            VP = Math.ceil(Math.log(provinces) * 1.3) + Math.floor(provinces / 75);
-            game.settings.setup.victoryPoints = VP;
-            log.info("VP " + VP)
+            targetVP = Math.log(provinces) * 1.3 + (provinces / 75);
+            log.info(`Target VP: ${targetVP}`);
         }
         if(game.settings.setup.thrones.level1 < 0){
-            game.settings.setup.thrones.level1 = Math.ceil(VP * 0.60);
+            game.settings.setup.thrones.level1 = Math.max(1, Math.round(targetVP * 0.60));
             log.info(`Level 1: ${game.settings.setup.thrones.level1}`);
         }
         if(game.settings.setup.thrones.level2 < 0) {
-            game.settings.setup.thrones.level2 = Math.ceil(VP * 0.35);
+            game.settings.setup.thrones.level2 = Math.max(1, Math.round(targetVP * 0.35));
             log.info(`Level 2: ${game.settings.setup.thrones.level2}`);
         }
         if(game.settings.setup.thrones.level3 < 0){
-            game.settings.setup.thrones.level3 = Math.ceil(VP * 0.15);
+            game.settings.setup.thrones.level3 = Math.round(targetVP * 0.15);
             log.info(`Level 3: ${game.settings.setup.thrones.level3}`);
         }
-        await saveGame(game);
-        log.info("Killing")
-        let childProcess = game.getProcess ? game.getProcess() : null;
-        let start = () => {
-            log.info("Spawning")
-            hostGame(game);
-            Util.domcmd.startGame({name: game.name});
-        };
-    
-        if(!childProcess){
-            //wait for game to close
-            setTimeout(start, 10000);
-        }else{
-            childProcess.on('exit', start);
+        if(game.settings.setup.victoryPoints < 0){
+            game.settings.setup.victoryPoints = Math.ceil((
+                game.settings.setup.thrones.level1 * 1 
+                + game.settings.setup.thrones.level2 * 2
+                + game.settings.setup.thrones.level3 * 3
+            ) * 0.6);
         }
-        
+        log.info(`VP: ${game.settings.setup.victoryPoints}`);
+        await saveGame(game);
+
+        log.info("Killing");
         await stopGame(game);
+
+        log.info("Spawning");
+        await hostGame(game);
+        await Util.domcmd.startGame({name: game.name});
     
         return 0;
     }
