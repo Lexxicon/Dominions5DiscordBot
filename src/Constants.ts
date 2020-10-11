@@ -16,6 +16,7 @@ export const EMOJI = {
         ":ten:":        "🔟",
         ":clock3:":     "🕒",
         ":turtle:":     "🐢",
+        ":blue_square:":"🟦",
         ":checkBox:":   "☑️",
         ":x:":          "❌",
         ":no_entry_sign:": "🚫",
@@ -23,6 +24,7 @@ export const EMOJI = {
         ":spy:":        "🕵️",
         ":save:":       "💾",
         ":sleeping:":   "😴",
+        ":thought_balloon:":"💭",
     };
 export const ERA = {
         "EARLY": ["--era","1"],
@@ -93,13 +95,13 @@ export const TURN_STATE = {
             id: 0,
             ready: false,
             display: "Waiting",
-            short: EMOJI[":clock3:"]
+            short: EMOJI[":blue_square:"]
         },
         "1": {
             id: 1,
             ready: false,
             display: "Partial",
-            short: EMOJI[":turtle:"]
+            short: EMOJI[":thought_balloon:"]
         },
         "2": {
             id: 2,
