@@ -1,7 +1,7 @@
 
 import { Message, NewsChannel, TextChannel } from "discord.js";
 import fs from "fs";
-import _ from "lodash";
+import _, { floor, random } from "lodash";
 import { getLogger } from 'log4js';
 import { ncp } from 'ncp';
 import * as constants from './Constants';
@@ -12,6 +12,7 @@ import { GuildMessage } from "./global";
 const log = getLogger();
 
 const config = require('../res/config.json');
+const tips:string[] = require('../res/tips.json').tips;
 
 const EMOJI_REGEX = {};
 
@@ -295,6 +296,10 @@ function isGuildMessage(message: Message): message is GuildMessage{
     return true;
 }
 
+function getRandomTip(): string{
+    return tips[floor(random(tips.length))];
+}
+
 export = {
     domcmd: {
         raw: (game:Game, arg: any) => { return domcmd(arg, game);},
@@ -327,5 +332,6 @@ export = {
     isGuildMessage,
     getDisplayTime,
     deletePretender,
-    guessStatus
+    guessStatus,
+    getRandomTip
 };

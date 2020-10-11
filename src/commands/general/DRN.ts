@@ -7,6 +7,7 @@ import AsciiTable from 'ascii-table';
 import AsciiChart from 'asciichart';
 import Util from "../../Util";
 import { GeneralCommand, CommandLocation } from "../CommandHandler";
+import { Message } from "discord.js";
 
 const log = getLogger();
 const VAL_REGEX = /(?<ATK>\d+)\s*vs?\s*(?<DEF>\d+)/;
@@ -33,7 +34,7 @@ new class extends GeneralCommand{
         return roll;
     }
 
-    async execute(msg: GuildMessage, arg: string): Promise<number> {
+    async execute(msg: Message, arg: string): Promise<number> {
         const match = VAL_REGEX.exec(arg);
         if(match && match?.groups){
             const atk = Number(match.groups['ATK']);

@@ -264,6 +264,8 @@ async function updateGameStatus(game: Game){
         game.state.notifiedBlockers = false;
         game.state.nextTurnStartTime = new Date().addMinutes(game.settings.turns.maxTurnTimeMinutes);
         await pingPlayers(game, `Start of turn ${game.state.turn}`);
+        const channel = await getChannel(game);
+        await channel?.send(`Tip of the turn: ${Util.getRandomTip()}`);
         await saveGame(game);
         await Util.backupGame(game.name);
     }
