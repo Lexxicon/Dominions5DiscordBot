@@ -29,21 +29,33 @@ new class extends GeneralCommand{
             return -1;
         }
         const roles = await msg.guild.roles.fetch();
+        log.info(`Configuring ${msg.guild?.name}`);
         if(roles.cache.filter( (v) => v.name == `${process.env.DEFAULT_GAME_MASTER}`).size == 0){
-            log.info(`Configuring ${msg.guild?.name}`);
             const role = await roles.create({
                     data:{
                         name: `${process.env.DEFAULT_GAME_MASTER}`
                     }
                 });
-            log.info(`adding role`);
+            log.info(`adding GM role`);
             await msg.member.roles.add(role);
-            
+        }
+        if(roles.cache.filter( (v) => v.name == `${process.env.DEFAULT_GAME_HOST}`).size == 0){
+            const role = await roles.create({
+                    data:{
+                        name: `${process.env.DEFAULT_GAME_HOST}`
+                    }
+                });
+            log.info(`adding host role`);
+            await msg.member.roles.add(role);
+        }
+        let category = msg.guild.channels.cache.find(channel => channel.name == `${process.env.DEFAULT_GAMES_CATEGORY_NAME}`);
+        if(!category){
             log.info(`creating category`);
-            const category = await msg.guild?.channels.create(`${process.env.DEFAULT_GAMES_CATEGORY_NAME}`, {
+            category = await msg.guild?.channels.create(`${process.env.DEFAULT_GAMES_CATEGORY_NAME}`, {
                     type: 'category'
                 });
-    
+        }
+        if(msg.guild.channels.cache.find(channel => channel.name == `${process.env.DEFAULT_LOBBY_NAME}`) == null){
             log.info(`creating lobby`);
             await category.guild.channels.create(`${process.env.DEFAULT_LOBBY_NAME}`, {
                 parent: category
