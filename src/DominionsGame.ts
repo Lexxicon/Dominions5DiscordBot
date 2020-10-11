@@ -13,6 +13,7 @@ import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './gl
 import { adaptGame, GAME_BINARY_VERSION } from './LegacyGameConverter';
 import util from './Util';
 import numericRange from 'parse-numeric-range';
+import { promises } from 'fs';
 
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
@@ -146,7 +147,7 @@ async function pingBlockingPlayers(game: Game) {
 
     const staleNations = await util.getStaleNations(game);
     if(game.state.nextTurnStartTime.getSecondsFromNow() < 60){
-        log.info(`Too little time remaining to ping stale nations`);
+        log.info(`Too little time remaining to ping stale nations for ${game.name}`);
         return;
     }
     if (game.state.notifiedBlockers) {
@@ -193,6 +194,10 @@ function handleStreamLines(outStream: Readable, handler: (line: string) => void)
             handler(data);
         }
     });
+}
+
+function getPorts(){
+    return ports;
 }
 
 async function hostGame(game: Game) {
@@ -262,13 +267,13 @@ async function hostGame(game: Game) {
     game.getProcess = () => child;
     game.pid = child.pid;
 
-    return Promise.withTimeout((resolve, reject) => {
+    await Promise.withTimeout((resolve, reject) => {
         child.stdout.on('data', resolve);
         child.stdout.on('error', reject);
         child.stderr.on('data',  reject);
         child.stderr.on('error', reject);
                 child.on('exit', reject);
-    }, 2000);
+    }, 10000);
 }
 
 async function stopGame(game: Game) {
@@ -299,31 +304,35 @@ async function unloadGame(game: Game) {
 async function deleteGame(game: Game) {
     log.info(`Deleting ${game.name} ${game.pid}`);
     const childProcess = game.getProcess ? game.getProcess() : null;
+    const exitPromise = Promise.withTimeout(resolve => childProcess?.on('exit', resolve), 2000);
+    log.debug(`unloading`);
     await unloadGame(game);
+    log.debug(`await exit`);
+    await exitPromise;
+    await util.deleteGameSave(game);
+    await util.deleteJSON(game.name);
     const guild = await getGuild(game);
+
     if(guild){
         if (game.discord.playerRoleId) {
-            await guild.roles.fetch(game.discord.playerRoleId)
-                .then(r => r!.delete())
-                .catch(log.error);
+            log.debug(`deleting player role`);
+            const role = await guild.roles.fetch(game.discord.playerRoleId);
+            await role?.delete();
         }
         
         if (game.discord.adminRoleId) {
-            await guild.roles.fetch(game.discord.adminRoleId)
-                .then(r => r!.delete())
-                .catch(log.error);
+            log.debug(`deleting admin role`);
+            const role = await guild.roles.fetch(game.discord.adminRoleId);
+            await role?.delete();
         }
 
         if (game.discord.channelId) {
+            log.debug(`deleting channel`);
             const chan = await guild.client.channels.fetch(game.discord.channelId);
-            await chan.delete();
+            new Promise(r => setTimeout(r, 10000)).then(() => chan.delete()).catch(error => {throw new Error(error);});
             delete gamesByChannel[game.discord.channelId];
         }
     }
-
-    await Promise.withTimeout(resolve => childProcess?.on('exit', resolve), 2000);
-    await util.deleteGameSave(game);
-    await util.deleteJSON(game.name);
 }
 
 async function loadGame(name: string) {
@@ -470,6 +479,7 @@ function getLaunchArgs(config: Game) {
 }
 
 export {
+    getPorts,
     create,
     getLaunchArgs,
     loadGame,

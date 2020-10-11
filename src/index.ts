@@ -16,16 +16,15 @@ log.info(``);
 
 import { validate } from './ValidateEnv';
 validate();
+const CMD_PREFIX = process.env.COMMAND_PREFIX || '!';
 
 import Discord, { NewsChannel, TextChannel } from 'discord.js';
 import { getChannel, hostGame, loadGame } from './DominionsGame';
 import * as dominionsStatus from './DominionsStatus';
-import {processGameCommand} from './commands/GameCommandHandler';
 import { GuildMessage } from './global';
-import lobbyCommandHandler from './LobbyCommands';
-import serverCommandHandler from './ServerCommands';
 import util from "./Util";
 import { loadAllCommands } from './commands/CommandLoader';
+import { processCommand } from './commands/CommandHandler';
 
 
 loadAllCommands().catch(error =>{ throw new Error(error); });
@@ -103,33 +102,23 @@ async function restoreGame(f: string){
 }
 
 bot.on('message', async msg => {
-    if( msg.content.startsWith('!') && (msg.channel instanceof TextChannel || msg.channel instanceof NewsChannel) && util.isGuildMessage(msg)){
-
-        log.info(msg.channel.name);
-        await msg.react(util.emoji(':thinking:'));
-        let handler: (msg: GuildMessage)=> Promise<number>;
-        if (msg.channel.name == LOBBY_NAME) {
-            log.info("Handling lobby command");
-            handler = lobbyCommandHandler;
-        }else if(msg.channel.parent?.name == `${process.env.DEFAULT_GAMES_CATEGORY_NAME}`){
-            log.info("Handling game command");
-            handler = processGameCommand;
-        }else{
-            log.info("Handling server command");
-            handler = serverCommandHandler;
-        }
+    if(msg.content.startsWith(CMD_PREFIX)){
+        log.debug(`Processing message for ${(msg.channel as any)?.name}`);
+        const thinking = await msg.react(util.emoji(':thinking:'));
+        const promises: Promise<any>[] = [];
         try{
-            const result = await handler(msg);
-            await msg.reactions.removeAll();
+            const result = await processCommand(msg, msg.content.substring(CMD_PREFIX.length));
+            promises.push(thinking.remove());
             if(result >= 0){
-                await msg.react(util.emoji(':thumbsup:'));
+                promises.push(msg.react(util.emoji(':thumbsup:')));
             }else{
-                await msg.react(util.emoji(':thumbsdown:'));
+                promises.push(msg.react(util.emoji(':thumbsdown:')));
             }
         } catch(err){
             log.error(err);
+            await Promise.all(promises);
             await msg.reactions.removeAll();
-            await msg.react(util.emoji(':no_entry_sign:'));
+            await Promise.all([msg.react(util.emoji(':no_entry_sign:')), msg.channel.send(`Error: ${err}`)]);
         }
     }
 });

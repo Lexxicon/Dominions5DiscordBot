@@ -17,7 +17,8 @@
                 "${workspaceFolder}/**/*.js"
             ],
             "envFile": "${workspaceFolder}/.env",
-            "outputCapture": "std"
+            "outputCapture": "std",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }

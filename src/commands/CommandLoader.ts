@@ -1,7 +1,8 @@
 import path from "path";
 import fs from "fs";
+import {loadingErrors} from './CommandHandler';
 
-const loadingErrors:string[] = [];
+const loadingExceptions:Error[] = [];
 
 async function* walk(dir: string) {
     for await (const d of await fs.promises.opendir(dir)) {
@@ -17,14 +18,14 @@ async function load() {
             try{
                 require(p);
             }catch(e){
-                loadingErrors.push(e);
+                loadingExceptions.push(new Error(e));
             }
         }
     }
 }
 export async function loadAllCommands() {
     await load();
-    if(loadingErrors.length > 0){
-        throw `Errors registering commands ${loadingErrors}`;
+    if(loadingExceptions.length > 0){
+        throw `Errors registering commands\n${loadingExceptions.map(e => `${e.name} ${e.stack}`).join('\n')}\n${loadingErrors}`;
     }
 }

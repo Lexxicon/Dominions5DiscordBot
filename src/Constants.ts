@@ -1,7 +1,7 @@
 
 export const EMOJI = {
         ":thumbsup:":   "👍",
-        ":thumbsdown:":  "👎",
+        ":thumbsdown:": "👎",
         ":robot:":      "🤖",
         ":zero:":       "0️⃣",
         ":one:":        "1️⃣",
@@ -19,11 +19,14 @@ export const EMOJI = {
         ":blue_square:":"🟦",
         ":checkBox:":   "☑️",
         ":x:":          "❌",
-        ":no_entry_sign:": "🚫",
         ":thinking:":   "🤔",
         ":spy:":        "🕵️",
         ":save:":       "💾",
         ":sleeping:":   "😴",
+        ":new_moon:":   "🌑",
+        ":first_quarter_moon:": "🌓",
+        ":full_moon:":  "🌕",
+        ":no_entry_sign:": "🚫",
         ":thought_balloon:":"💭",
     };
 export const ERA = {
@@ -95,19 +98,19 @@ export const TURN_STATE = {
             id: 0,
             ready: false,
             display: "Waiting",
-            short: EMOJI[":blue_square:"]
+            short: EMOJI[":new_moon:"]
         },
         "1": {
             id: 1,
             ready: false,
             display: "Partial",
-            short: EMOJI[":thought_balloon:"]
+            short: EMOJI[":first_quarter_moon:"]
         },
         "2": {
             id: 2,
             ready: true,
             display: "Done",
-            short: EMOJI[":checkBox:"]
+            short: EMOJI[":full_moon:"]
         },
         "9": { //lobby?
             id: 9,

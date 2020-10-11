@@ -159,15 +159,17 @@ function guessStatus(input: any, nations: PlayerStatus[]){
 async function deleteJSON(name: string) {
     try{
         await fs.promises.unlink(`${process.env.BOT_SAVE_PATH}${name}.json`);
+        log.debug(`Deleted json ${name}`);
     }catch(err){
         log.error(err);
     }
 }
 
 async function deleteGameSave(game) {
-    const path = `${process.env.BOT_SAVE_PATH}${game.name}`;
+    const path = `${process.env.DOM5_CONF}/savedgames/${game.name}`;
     try{
         await fs.promises.rmdir(path, {recursive: true});
+        log.debug(`Deleted game ${game.name} at ${path}`);
     }catch(err){
         log.error(err);
     }

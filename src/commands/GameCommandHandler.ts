@@ -5,28 +5,11 @@ import { checkPermission, Permission } from '../Permissions';
 import _ from "lodash";
 import { Message } from 'discord.js';
 import Util from '../Util';
+import { CommandLocation, GeneralCommand } from './CommandHandler';
 
 const log = getLogger();
 
-const registry:{[index: string]: GameCommand} = {};
-const loadingErrors:string[] = [];
-
-export abstract class GameCommand implements GeneralCommand {
-    
-    public get value() : Record<string, unknown> {
-        return registry;
-    }
-
-    constructor(){
-        for(const name of this.getName()){
-            if(registry[name]){
-                loadingErrors.push(`Duplicate command! ${this.getName()} ${this.getPath()}`);
-            }else{
-                this.value[name] = this;
-            }
-        }
-    }
-
+export abstract class GameCommand extends GeneralCommand {
     async execute(msg: Message, args: string): Promise<number>{
         if(!Util.isGuildMessage(msg)) return -1;
         const game = getGameByChannel(msg.channel);
@@ -35,44 +18,12 @@ export abstract class GameCommand implements GeneralCommand {
         return await this.executeGameCommand(msg, game, args);
     }
 
+    getCommandType(){
+        return CommandLocation.GAME_LOBBY;
+    }
+
     abstract getNeededPermission(): Permission;
     abstract getName(): string[];
     abstract getPath(): string;
     abstract executeGameCommand(msg: GuildMessage, game: Game, args: string): Promise<number>;
-}
-
-export interface GeneralCommand {
-    execute(msg: Message, args: string): Promise<number>
-}
-
-export async function processGameCommand(msg: GuildMessage){
-    
-    const input = msg.content.substring(1);
-
-    let split = input.indexOf(' ');
-    split = split < 0 ? input.length : split;
-
-    const commandKey = input.substring(0, split);
-    const command = registry[commandKey];
-    if(!command){
-        if(commandKey == 'help'){
-            await msg.channel.send(`Available Commands:\n${_.keys(registry).join('\n')}`);
-            return 0;
-        }
-        return -1;
-    } 
-
-    const arg = split >= input.length ? '' : input.substring(split + 1);
-
-    const games = getGames();
-    for(const gameKey in games){
-        const game = games[gameKey];
-
-        if(msg.channel.id != game.discord.channelId){
-            continue;
-        }
-        checkPermission(msg.member, command.getNeededPermission(), game);
-        return command.executeGameCommand(msg, game, arg);
-    }
-    return -1;
 }

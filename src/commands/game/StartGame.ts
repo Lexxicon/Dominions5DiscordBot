@@ -57,7 +57,7 @@ new class extends GameCommand{
         log.info("Spawning");
         await hostGame(game);
         await Util.domcmd.startGame({name: game.name});
-    
+        await msg.channel.send(`Starting ${game.name}`);
         return 0;
     }
 };
