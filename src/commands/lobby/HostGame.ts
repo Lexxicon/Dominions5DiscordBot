@@ -67,7 +67,7 @@ new class extends GeneralCommand{
 
         await startWatches(game);
         await Util.saveJSON(game.name, game);
-        await msg.channel.send(`Created new game ${channel.toString()}`);
+        await msg.channel.send(`Created new game ${channel.name}`);
         return 0;
     }
 };

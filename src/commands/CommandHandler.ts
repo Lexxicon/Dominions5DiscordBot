@@ -60,6 +60,8 @@ export async function processCommand(msg: Message, input: string){
 
     const commandKey = input.substring(0, split);
     const command = registry[channelType][commandKey];
+    const game = getGameByChannel(msg.channel);
+
     if(!command){
         if(commandKey == 'help'){
             await msg.channel.send(`Available Commands:\n${_.keys(registry[channelType]).join('\n')}`);
@@ -69,8 +71,9 @@ export async function processCommand(msg: Message, input: string){
     } 
 
     const arg = split >= input.length ? '' : input.substring(split + 1);
-    const game = getGameByChannel(msg.channel);
-    checkPermission(msg.author, msg.member, command.getNeededPermission(), game);
-    const result = await command.execute(msg, arg);
-    return result;
+    if(checkPermission(msg.author, msg.member, command.getNeededPermission(), game)){
+        const result = await command.execute(msg, arg);
+        return result;
+    }
+    return -1;
 }
