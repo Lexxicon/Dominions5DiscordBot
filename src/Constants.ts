@@ -26,7 +26,7 @@ export const EMOJI = {
         ":new_moon:":   "🌑",
         ":first_quarter_moon:": "🌓",
         ":full_moon:":  "🌕",
-        "::last_quarter_moon:": "🌗",
+        ":last_quarter_moon:": "🌗",
         ":no_entry_sign:": "🚫",
         ":thought_balloon:":"💭",
     };
@@ -105,7 +105,7 @@ export const TURN_STATE = {
             id: 1,
             ready: false,
             display: "Partial",
-            short: EMOJI[":last_quarter_moon:"]
+            short: EMOJI[":first_quarter_moon:"]
         },
         "2": {
             id: 2,
