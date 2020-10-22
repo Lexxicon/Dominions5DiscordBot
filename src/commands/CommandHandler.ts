@@ -5,10 +5,10 @@ import _ from 'lodash';
 
 export enum CommandLocation {
     ANYWHERE        = ~0,
-    DIRECT_MESSAGE  = 1 << 1,
+    UNKNOWN         = 1 << 1,
     SERVER_LOBBY    = 1 << 2,
     GAME_LOBBY      = 1 << 3,
-    GNERIC          = 1 << 4,
+    DIRECT_MESSAGE  = 1 << 4,
 }
 
 const registry:{[type in CommandLocation]:{[index: string]: GeneralCommand}} = {};
@@ -29,7 +29,7 @@ function getChannelType(channel: TextChannel | DMChannel | NewsChannel){
     if(channel.type == 'dm') return CommandLocation.DIRECT_MESSAGE;
     if(channel.name.toLowerCase() == process.env.DEFAULT_LOBBY_NAME?.toLowerCase()) return CommandLocation.SERVER_LOBBY;
     if(channel.parent && channel.parent.name.toLowerCase() == process.env.DEFAULT_GAMES_CATEGORY_NAME?.toLowerCase()) return CommandLocation.GAME_LOBBY;
-    return CommandLocation.GNERIC;
+    return CommandLocation.UNKNOWN;
 }
 
 export abstract class GeneralCommand {

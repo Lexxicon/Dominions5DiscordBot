@@ -26,6 +26,7 @@ export const EMOJI = {
         ":new_moon:":   "🌑",
         ":first_quarter_moon:": "🌓",
         ":full_moon:":  "🌕",
+        "::last_quarter_moon:": "🌗",
         ":no_entry_sign:": "🚫",
         ":thought_balloon:":"💭",
     };
@@ -54,7 +55,7 @@ export const SLOTS = {
     };
 export const SIMPLE_RAND_MAP = {
         "SMALL": ["--randmap", "10", "--vwrap"],
-        "MEDIUM": ["--randmap", "15", "--vwrap"],
+        "MEDIUM": ["--randmap", "17", "--vwrap"],
         "LARGE": ["--randmap", "20", "--vwrap"]
     };
 export const PLAYER_STATUS = {
@@ -104,7 +105,7 @@ export const TURN_STATE = {
             id: 1,
             ready: false,
             display: "Partial",
-            short: EMOJI[":first_quarter_moon:"]
+            short: EMOJI[":last_quarter_moon:"]
         },
         "2": {
             id: 2,

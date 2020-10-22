@@ -20,11 +20,15 @@ new class extends GameCommand{
     }
     async executeGameCommand(msg: GuildMessage, game: Game, nationID: string) {
         const roleID = game.discord.playerRoleId;
+        let addedRole = false;
         if(roleID){
             const role = await msg.guild.roles.fetch(roleID);
 
             if(role){
-                await msg.member!.roles.add(role);
+                if(msg.member.roles.cache.find(r => r.id == role.id) == null){
+                    await msg.member!.roles.add(role);
+                    addedRole = true;
+                }
             }else{
                 throw new Error(`failed to find player role! ${game.name} ${roleID}`);
             }
@@ -51,6 +55,9 @@ new class extends GameCommand{
             await updateGameStatus(game);
             await msg.channel.send(`Joined ${name} as ${nation.name}`);
 
+        }else if(addedRole){
+            await msg.channel.send(`Joined game without nation!`);
+            return 1;
         }else{
             await msg.channel.send(`Failed to find nation! ${nationID}`);
             return -1;

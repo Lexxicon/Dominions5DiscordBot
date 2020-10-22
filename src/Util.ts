@@ -145,11 +145,11 @@ function guessStatus(input: any, nations: PlayerStatus[]){
         return bestGuess;
     }else{
         const i = Number(input);
-        if(nations[i].nationId == i){
+        if(nations[i]?.nationId == i){
             return nations[i];
         }
         for(const status of nations){
-            if(status.nationId == i){
+            if(status?.nationId == i){
                 return status;
             }
         }
@@ -297,7 +297,7 @@ function isGuildMessage(message: Message): message is GuildMessage{
 }
 
 function getRandomTip(): string{
-    return tips[floor(random(tips.length))];
+    return randomValue(tips);
 }
 
 export = {

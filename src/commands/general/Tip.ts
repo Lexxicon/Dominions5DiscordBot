@@ -1,6 +1,5 @@
 import { Message } from "discord.js";
 import { getLogger } from "log4js";
-import { GuildMessage } from "../../global";
 import { Permission } from "../../Permissions";
 import Util from "../../Util";
 import { GeneralCommand, CommandLocation } from "../CommandHandler";
