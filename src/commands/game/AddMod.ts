@@ -29,11 +29,9 @@ new class extends GameCommand{
                 await saveGame(game);
                 await msg.channel.send(`Added Mod: ${mod}`);
                 return 1;
-            }else {
-                log.warn(`Failed to add ${mod}`);
-                return -1;
             }
         }
-        return 0;
+        log.warn(`Failed to add ${mod}`);
+        return -1;
     }
 };
