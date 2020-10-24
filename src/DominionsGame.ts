@@ -58,6 +58,7 @@ export class Game {
             victoryPoints: -1,
             cataclysm: 72,
             mods: [] as string[],
+            teams: {} as Record<string, Snowflake[]|null> | undefined
         }
     };
     discord = {
@@ -120,6 +121,17 @@ async function pingPlayers(game: Game, msg: string) {
             return;
         }
         await channel.send(`<@&${game.discord.playerRoleId}> ${msg}`);
+    }
+}
+
+function getTeam(game: Game, playerID: Snowflake){
+    if(game.settings.setup.teams){
+        for(const team in game.settings.setup.teams){
+            const index = game.settings.setup.teams[team]?.indexOf(playerID);
+            if(index !== undefined && index >= 0){
+                return team;
+            }
+        }
     }
 }
 

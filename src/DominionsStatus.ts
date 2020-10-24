@@ -210,6 +210,10 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             if(role){
                 log.info(`found ${role.name} with ${role.members.size} memebers`);
                 desc.push(`Players: ${role.members.size}`);
+                role.members
+                    .filter(member => game.discord.players[member.user.id] === undefined)
+                    .map(member => member.displayName)
+                    .forEach(name => desc.push(name));
             }else{
                 log.info(`Failed to find role`);
             }
@@ -236,7 +240,8 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         table.addRow(activeNames[i], activePlayers[i], activeState[i]);
     }
 
-    return '```'+(desc.join('\n'))+'\n\n'+table.toString()+'```' as string;
+    const result = '```'+(desc.join('\n'))+'\n\n'+table.toString()+'```';
+    return result.split('\n').map(s => s.trimEnd()).join('\n');
 }
 
 async function read(path: string){
