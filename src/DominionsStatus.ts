@@ -210,10 +210,22 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
             if(role){
                 log.info(`found ${role.name} with ${role.members.size} memebers`);
                 desc.push(`Players: ${role.members.size}`);
+                const idToName: Record<Snowflake, string> = {};
                 role.members
                     .filter(member => game.discord.players[member.user.id] === undefined)
-                    .map(member => member.displayName)
-                    .forEach(name => desc.push(name));
+                    .each(member => idToName[member.user.id] = member.displayName);
+                for(const t in game.settings.setup.teams){
+                    const team = game.settings.setup.teams[t];
+                    if(!team) continue;
+                    desc.push(`Team: ${t}`);
+                    for(const id of team){
+                        desc.push(` ${idToName[id]}`);
+                        delete idToName[id];
+                    }
+                }
+                for(const id in idToName){
+                    desc.push(idToName[id]);
+                }
             }else{
                 log.info(`Failed to find role`);
             }

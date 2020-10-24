@@ -13,7 +13,7 @@ new class extends GameCommand{
         return Permission.PLAYER;
     }
     getName(): string[] {
-        return ['createTeam'];
+        return ['joinTeam'];
     }
     getPath(): string {
         return __filename;
@@ -23,20 +23,23 @@ new class extends GameCommand{
             game.settings.setup.teams = {};
         }
 
-        if(game.settings.setup.teams[teamName]){
-            await msg.channel.send(`Team ${teamName} already exists!`);
+        if(teamName && !game.settings.setup.teams[teamName]){
+            await msg.channel.send(`Team ${teamName} doesn't exists!`);
             return -1;
         }
+        
         for(const t in game.settings.setup.teams){
             const team = game.settings.setup.teams[t];
             if(team && team.indexOf(msg.author.id) != -1){
                 team.splice(team.indexOf(msg.author.id), 1);
+                await msg.channel.send(`Removed ${msg.member.displayName} from ${t}`);
             }
         }
-
-        game.settings.setup.teams[teamName] = [msg.author.id];
+        if(teamName){
+            game.settings.setup.teams[teamName]?.push(msg.author.id);
+            await msg.channel.send(`Joined ${msg.member.displayName} to Team ${teamName}!`);
+        }
         await saveGame(game);
-        await msg.channel.send(`Created Team ${teamName}!`);
         await updateGameStatus(game);
         return 0;
     }
