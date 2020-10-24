@@ -1,8 +1,9 @@
 import AsciiTable from 'ascii-table';
 import dateFormat from 'dateformat';
 import { Message, Snowflake } from 'discord.js';
-import fs from 'fs';
+import fs, { watch } from 'fs';
 import log4js from 'log4js';
+import { getDiscordBot } from '.';
 import * as constants from './Constants';
 import { Game, getChannel, getPlayerDisplayName, getPlayerForNation, pingBlockingPlayers, pingPlayers, saveGame } from './DominionsGame';
 import Util from './Util';
@@ -14,6 +15,8 @@ const NATION_REGEX = /^Nation\t(?<NATION_ID>\d+)\t(?<PRETENDER_ID>\d+)\t(?<PLAYE
 
 const nextAllowedUpdate: { [k : string]:number } = {};
 const queuedUpdate: { [k : string]:NodeJS.Timeout} = {};
+
+const watches: Record<string, fs.FSWatcher> = {};
 
 class GameState {
     name = "";
@@ -192,11 +195,25 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
     desc.push(`Hosted at: ${process.env.HOST_URL}`);
     desc.push(`Port: ${game.settings.server.port}\n`);
 
+    if(game.settings.setup.mods.length > 0){
+        desc.push(`Mods:\n${game.settings.setup.mods.join('\n')}\n`);
+    }
+
     const secondsTillHost = game.state.nextTurnStartTime.getSecondsFromNow();
     log.info(`Seconds till host ${secondsTillHost}`);
 
     if(gameState.turnState.turn < 0){
-        desc.push("Lobby");
+        desc.push(`Lobby`);
+        const channel = await getChannel(game);
+        if(channel && game.discord.playerRoleId){
+            const role = await channel.guild.roles.fetch(game.discord.playerRoleId);
+            if(role){
+                log.info(`found ${role.name} with ${role.members.size} memebers`);
+                desc.push(`Players: ${role.members.size}`);
+            }else{
+                log.info(`Failed to find role`);
+            }
+        }
     } else{
         if(gameState.turnState.turnLimit){
             desc.push(`Turn: ${gameState.turnState.turn}/${gameState.turnState.turnLimit}`);
@@ -332,8 +349,14 @@ async function startWatches(game: Game) {
     const channel = await getChannel(game);
     if(channel != null && game.discord.turnStateMessageId){
         log.info(`Setting up watch for ${game.name}`);
-        fs.watch(getStatusFilePath(game), 'utf8', () => updateGameStatus(game).catch(e => log.error(e)));
+        const watcher = fs.watch(getStatusFilePath(game), 'utf8', () => updateGameStatus(game).catch(e => log.error(e)));
+        watches[game.name] = watcher;
     }
+}
+
+function unwatch(game:Game){
+    watches[game.name].close();
+    delete watches[game.name];
 }
 
 export {
@@ -341,5 +364,6 @@ export {
     parseLines,
     createEmbeddedGameState,
     startWatches,
-    updateGameStatus
+    updateGameStatus,
+    unwatch
 };

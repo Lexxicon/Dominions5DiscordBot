@@ -12,7 +12,7 @@ new class extends GameCommand{
         return Permission.PLAYER;
     }
     getName(): string[] {
-        return ['listAddedMods'];
+        return ['listAvailableMods'];
     }
     getPath(): string {
         return __filename;

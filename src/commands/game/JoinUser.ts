@@ -57,6 +57,7 @@ new class extends GameCommand{
 
         }else if(addedRole){
             await msg.channel.send(`Joined game without nation!`);
+            await updateGameStatus(game);
             return 1;
         }else{
             await msg.channel.send(`Failed to find nation! ${nationID}`);

@@ -38,9 +38,9 @@ new class extends GameCommand{
 
             delete game.discord.players[msg.member.id];
             await saveGame(game);
-            await updateGameStatus(game);
             await msg.channel.send(`Resigned ${displayName} from ${game.playerStatus[nationID]?.name}`);
         }
+        await updateGameStatus(game);
         return 0;
     }
 };

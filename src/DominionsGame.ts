@@ -8,12 +8,12 @@ import { getLogger } from 'log4js';
 import { Readable } from "stream";
 import { getDiscordBot } from '.';
 import * as constants from './Constants';
-import { PlayerStatus, updateGameStatus } from './DominionsStatus';
+import { PlayerStatus, unwatch, updateGameStatus } from './DominionsStatus';
 import { Era, EventRarity, MapOptions, SlotOptions, StoryEventLevel } from './global';
 import { adaptGame, GAME_BINARY_VERSION } from './LegacyGameConverter';
 import util from './Util';
 import numericRange from 'parse-numeric-range';
-import { promises } from 'fs';
+import { promises, unwatchFile } from 'fs';
 
 const log = getLogger();
 const ports: NumericDictionary<Game | null> = {};
@@ -258,6 +258,7 @@ async function hostGame(game: Game) {
 
     child.on('exit', (code, sig) => {
         log.warn(`Game exited! ${game.name}, ${code}, ${sig}`);
+        unwatch(game);
         delete game.getProcess;
         if (ports[game.settings.server.port!] === game) {
             ports[game.settings.server.port!] = null;
