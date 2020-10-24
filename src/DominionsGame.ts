@@ -384,10 +384,16 @@ export function getPlayerForNation(game: Game, nationID: string){
     return null;
 }
 
-
 export async function getPlayerDisplayName(game: Game, nationId: string) {
     const playerId = getPlayerForNation(game, nationId);
     if (playerId) {
+        let teamId = "";
+        for(const t in game.settings.setup.teams){
+            const team = game.settings.setup.teams[t];
+            if(team && team.indexOf(playerId) != -1){
+                teamId = `${t} `;
+            }
+        }
         const bot = getDiscordBot();
         const guild = await getGuild(game);
         if(guild){
@@ -396,14 +402,14 @@ export async function getPlayerDisplayName(game: Game, nationId: string) {
             const guildMember = await guild?.member(playerId)?.fetch(true);
             
             if(guildMember){
-                return guildMember.displayName;
+                return `${teamId}${guildMember.displayName}`;
             }
         }
         const player = await bot.users.fetch(playerId);
         if (player) {
-            return player.username;
+            return `${teamId}${player.username}`;
         } else {
-            return 'Failed to load';
+            return `${teamId}Failed to load`;
         }
     }
     return '-';

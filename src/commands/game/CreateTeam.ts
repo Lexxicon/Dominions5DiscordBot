@@ -31,6 +31,9 @@ new class extends GameCommand{
             const team = game.settings.setup.teams[t];
             if(team && team.indexOf(msg.author.id) != -1){
                 team.splice(team.indexOf(msg.author.id), 1);
+                if(team?.length == 0){
+                    delete game.settings.setup.teams[t];
+                }
             }
         }
 

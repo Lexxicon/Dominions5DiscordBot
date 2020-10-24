@@ -219,8 +219,10 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
                     if(!team) continue;
                     desc.push(`Team: ${t}`);
                     for(const id of team){
-                        desc.push(` ${idToName[id]}`);
-                        delete idToName[id];
+                        if(idToName[id]){
+                            desc.push(` ${idToName[id]}`);
+                            delete idToName[id];
+                        }
                     }
                 }
                 for(const id in idToName){

@@ -31,8 +31,15 @@ new class extends GameCommand{
         for(const t in game.settings.setup.teams){
             const team = game.settings.setup.teams[t];
             if(team && team.indexOf(msg.author.id) != -1){
+                if(t == teamName){
+                    await msg.channel.send(`You are already on ${teamName}`);
+                    return -1;
+                }
                 team.splice(team.indexOf(msg.author.id), 1);
                 await msg.channel.send(`Removed ${msg.member.displayName} from ${t}`);
+                if(team?.length == 0){
+                    delete game.settings.setup.teams[t];
+                }
             }
         }
         if(teamName){
