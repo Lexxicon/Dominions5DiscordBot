@@ -29,6 +29,7 @@ export const EMOJI = {
         ":last_quarter_moon:": "🌗",
         ":no_entry_sign:": "🚫",
         ":thought_balloon:":"💭",
+        ":pushpin":    "📌",
     };
 export const ERA = {
         "EARLY": ["--era","1"],

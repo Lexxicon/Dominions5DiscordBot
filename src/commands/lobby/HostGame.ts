@@ -42,7 +42,7 @@ new class extends GeneralCommand{
     
         const playerRole = await guild.roles.create({
             data: {
-                name:`${gameName}-player`,
+                name:`${gameName}-Player`,
                 mentionable: true
             }
         });
@@ -50,12 +50,19 @@ new class extends GeneralCommand{
         game.discord.playerRoleId = playerRole.id;
         const adminRole = await msg.guild.roles.create({
             data: {
-                name: `${gameName}-admin`,
+                name: `${gameName}-Admin`,
                 mentionable: true
             }
         });
     
         await msg.member.roles.add(adminRole);
+
+        await channel.overwritePermissions([
+            {
+                id: adminRole.id,
+                allow: ['MANAGE_MESSAGES'],
+            }
+        ]);
     
         game.discord.adminRoleId = adminRole.id;
         log.info(`Saving game`);
@@ -91,6 +98,6 @@ async function createChannel(guild: Guild, name: string, reason: string){
     return await guild.channels.create(name, {
         type: 'text',
         parent: category?.id,
-        reason: reason
+        reason: reason,
     });
 }

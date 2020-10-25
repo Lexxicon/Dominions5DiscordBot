@@ -42,10 +42,18 @@ new class extends GameCommand{
                     for(let i = 0; i < settingsPath.length - 1; i++){
                         settings = settings[settingsPath[i]];
                     }
-                    log.debug(`Result settings: ${settings}`);
-                   
-                    settings[settingsPath[settingsPath.length - 1]] = JSON.parse(args.slice(2).join(' '));
+                    log.debug(`Result settings: ${JSON.stringify(settings[settingsPath[settingsPath.length - 1]])}`);
+                    const raw = args.slice(2).join(' ');
+                    let value: any;
+                    try{
+                        value = JSON.parse(raw);
+                    } catch(e){
+                        value = raw;
+                    }
+                    log.debug(`Setting ${value}`);
+                    settings[settingsPath[settingsPath.length - 1]] = value;
                     await saveGame(game);
+                    await msg.channel.send(`Set ${settingsPath[settingsPath.length - 1]} to ${JSON.stringify(settings[settingsPath[settingsPath.length - 1]])}`);
                     return 0;
                 }
                 case 'get':{
