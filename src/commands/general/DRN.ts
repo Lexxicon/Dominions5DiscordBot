@@ -9,6 +9,10 @@ import Util from "../../Util";
 import { GeneralCommand, CommandLocation } from "../CommandHandler";
 import { Message } from "discord.js";
 
+function logBase(x, y){
+    return Math.log(y) / Math.log(x);
+}
+
 const log = getLogger();
 const VAL_REGEX = /(?<ATK>\d+)\s*vs?\s*(?<DEF>\d+)/;
 new class extends GeneralCommand{
@@ -69,11 +73,12 @@ new class extends GeneralCommand{
             }
             
             const table = new AsciiTable(`${atk} vs ${def}`);
-            table.addRow('Rolls', rolls);
-            table.addRow('Wins', result.wins);
-            table.addRow('Losses', result.losses);
             table.addRow('Avg', (sum/count).toFixed(2));
             table.addRow('Win %', ((result.wins/rolls)*100).toFixed(2));
+            table.addRow('50% win',Math.ceil(logBase(.5, (result.wins / rolls))));
+            table.addRow('75% win',Math.ceil(logBase(.75, (result.wins / rolls))));
+            table.addRow('90% win',Math.ceil(logBase(.9, (result.wins / rolls))));
+            table.addRow('95% win',Math.ceil(logBase(.95, (result.wins / rolls))));
 
             const tableStr = table.toString().split('\n') as string[];
             const graph = AsciiChart.plot([zero, breakdown], {height: tableStr.length}).split('\n') as string[];
