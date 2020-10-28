@@ -206,6 +206,7 @@ async function createEmbeddedGameState(game: Game, gameState: GameState, staleNa
         desc.push(`Lobby`);
         const channel = await getChannel(game);
         if(channel && game.discord.playerRoleId){
+            await channel.guild.members.fetch();
             const role = await channel.guild.roles.fetch(game.discord.playerRoleId);
             if(role){
                 log.info(`found ${role.name} with ${role.members.size} memebers`);
