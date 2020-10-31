@@ -114,6 +114,7 @@ bot.on('message', async msg => {
             }else{
                 promises.push(msg.react(util.emoji(':thumbsdown:')));
             }
+            await Promise.all(promises);
         } catch(err){
             log.error(err);
             await Promise.all(promises);

@@ -375,8 +375,10 @@ async function startWatches(game: Game) {
 }
 
 function unwatch(game:Game){
-    watches[game.name].close();
-    delete watches[game.name];
+    if(watches[game.name]){
+        watches[game.name].close();
+        delete watches[game.name];
+    }
 }
 
 export {
