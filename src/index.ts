@@ -100,24 +100,20 @@ async function restoreGame(f: string){
         log.error(`Failed resoting ${f}, ${err}`);
     }
 }
-
 bot.on('message', async msg => {
     if(msg.content.startsWith(CMD_PREFIX)){
         log.debug(`Processing message for ${(msg.channel as any)?.name}`);
         const thinking = await msg.react(util.emoji(':thinking:'));
-        const promises: Promise<any>[] = [];
         try{
             const result = await processCommand(msg, msg.content.substring(CMD_PREFIX.length));
-            promises.push(thinking.remove());
+            await thinking.remove();
             if(result >= 0){
-                promises.push(msg.react(util.emoji(':thumbsup:')));
+                await msg.react(util.emoji(':thumbsup:'));
             }else{
-                promises.push(msg.react(util.emoji(':thumbsdown:')));
+                await msg.react(util.emoji(':thumbsdown:'));
             }
-            await Promise.all(promises);
         } catch(err){
             log.error(err);
-            await Promise.all(promises);
             await msg.reactions.removeAll();
             await Promise.all([msg.react(util.emoji(':no_entry_sign:')), msg.channel.send(`Error: ${err}`)]);
         }
