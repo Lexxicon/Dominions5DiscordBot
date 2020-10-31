@@ -106,7 +106,8 @@ bot.on('message', async msg => {
         const thinking = await msg.react(util.emoji(':thinking:'));
         try{
             const result = await processCommand(msg, msg.content.substring(CMD_PREFIX.length));
-            await thinking.remove();
+            if(msg.channel.type != "dm")
+                await thinking.remove();
             if(result >= 0){
                 await msg.react(util.emoji(':thumbsup:'));
             }else{
@@ -114,7 +115,8 @@ bot.on('message', async msg => {
             }
         } catch(err){
             log.error(err);
-            await msg.reactions.removeAll();
+            if(msg.channel.type != "dm")
+                await msg.reactions.removeAll();
             await Promise.all([msg.react(util.emoji(':no_entry_sign:')), msg.channel.send(`Error: ${err}`)]);
         }
     }
