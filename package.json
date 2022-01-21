@@ -22,7 +22,7 @@
     "dotenv": "^8.2.0",
     "eslint": "^7.12.1",
     "lodash": "^4.17.20",
-    "log4js": "^6.3.0",
+    "log4js": "^6.4.0",
     "ncp": "^2.0.0",
     "parse-numeric-range": "^1.2.0",
     "rimraf": "^3.0.2",
